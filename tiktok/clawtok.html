@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🦞 ClawTok</title>
+    <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-black: #000000;
+            --bg-dark: #121212;
+            --text-white: #ffffff;
+            --text-gray: #8a8a8a;
+            --accent-pink: #fe2c55;
+            --accent-cyan: #25f4ee;
+        }
+        
+        body {
+            font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-black);
+            color: var(--text-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Phone Frame */
+        .phone-frame {
+            max-width: 420px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: var(--bg-black);
+            position: relative;
+            border-left: 1px solid #222;
+            border-right: 1px solid #222;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            padding: 15px 20px 20px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header h1 span {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 30px;
+            margin-top: 10px;
+        }
+        
+        .tab {
+            color: var(--text-gray);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding-bottom: 5px;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: var(--text-white);
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--text-white);
+        }
+        
+        /* Video Feed */
+        .feed {
+            padding-top: 120px;
+            padding-bottom: 80px;
+        }
+        
+        .video-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: var(--bg-dark);
+            margin-bottom: 10px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .video-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        }
+        
+        .video-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .video-title {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-gray);
+            font-size: 13px;
+        }
+        
+        .video-meta .hashtag {
+            color: var(--text-white);
+        }
+        
+        /* Side Actions */
+        .side-actions {
+            position: absolute;
+            right: 10px;
+            bottom: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .action-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .action-count {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-black);
+            border-top: 1px solid #222;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-gray);
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active {
+            color: var(--text-white);
+        }
+        
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Floating Follow */
+        .follow-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-pink);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 101;
+            cursor: pointer;
+        }
+        
+        /* Video Player Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-black);
+            z-index: 200;
+            flex-direction: column;
+        }
+        
+        .video-modal.active {
+            display: flex;
+        }
+        
+        .modal-header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+        }
+        
+        .modal-video {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-video video {
+            max-height: 100%;
+            max-width: 100%;
+        }
+        
+        /* Grid View */
+        .grid-view {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            padding: 90px 5px 70px;
+        }
+        
+        .grid-item {
+            aspect-ratio: 9/16;
+            background: var(--bg-dark);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .grid-item img, .grid-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .grid-item .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            opacity: 0.8;
+        }
+        
+        .grid-item .view-count {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-gray);
+        }
+        
+        /* TikTok-style logo */
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .playing .action-icon {
+            animation: pulse 1s infinite;
+            background: var(--accent-pink);
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <h1>🦞 <span>ClawTok</span></h1>
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('following')">Following</div>
+                <div class="tab" onclick="switchTab('for-you')">For You</div>
+                <div class="tab" onclick="switchTab('videos')">Videos</div>
+            </div>
+        </div>
+        
+        <!-- Follow Button -->
+        <div class="follow-btn" onclick="alert('🦞 Thanks for following!')">+ Follow</div>
+        
+        <!-- Video Feed -->
+        <div class="feed" id="feed">
+            <!-- Videos loaded via JavaScript -->
+        </div>
+        
+        <!-- Grid View (hidden by default) -->
+        <div class="grid-view" id="grid" style="display: none;">
+            <!-- Grid items loaded via JavaScript -->
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('for-you')">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('videos')">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 3l6 3-6 3V3z"/><rect x="3" y="5" width="12" height="14" rx="2"/></svg>
+                <span>Videos</span>
+            </div>
+            <div class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>Upload</span>
+            </div>
+            <div class="nav-item">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Profile</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Video Modal -->
+    <div class="video-modal" id="videoModal">
+        <div class="modal-header">
+            <span></span>
+            <span class="close-btn" onclick="closeModal()">✕</span>
+        </div>
+        <div class="modal-video">
+            <video id="modalVideo" controls playsinline></video>
+        </div>
+    </div>
+
+    <script>
+        const videos = [
+            { file: '1_aws_install.mp4', title: 'Install OpenClaw for FREE on AWS Cloud', author: '@adamstewartmarketing', views: '1.2M', likes: '45.2K', comments: '1.2K' },
+            { file: '2_mini_pc_ubuntu.mp4', title: 'Run OpenClaw on $200 Mini PC with Ubuntu', author: '@adamstewartmarketing', views: '890K', likes: '32.1K', comments: '892' },
+            { file: '3_uninstall.mp4', title: 'How to UNINSTALL OpenClaw cleanly', author: '@adamstewartmarketing', views: '567K', likes: '21.3K', comments: '445' },
+            { file: '4_life_changed.mp4', title: 'OpenClaw is changing my life in crazy ways', author: '@matthewberman_ai', views: '2.1M', likes: '89.4K', comments: '3.4K' },
+            { file: '5_content_pipeline.mp4', title: 'Using OpenClaw for content creation workflow', author: '@matthewberman_ai', views: '1.5M', likes: '67.8K', comments: '2.1K' },
+            { file: '6_24_7_ai.mp4', title: 'Viral 24/7 AI Clawdbot you can message to DO work', author: '@brandnat', views: '4.2M', likes: '156K', comments: '8.9K' },
+            { file: '7_security_setup.mp4', title: '3-step security setup for OpenClaw (non-techie)', author: '@brandnat', views: '780K', likes: '28.9K', comments: '1.1K' },
+            { file: '8_explained.mp4', title: 'OpenClaw / MoltBot and AI agents explained', author: '@shanselman', views: '3.8M', likes: '134K', comments: '5.6K' },
+            { file: '9_openai_joins.mp4', title: '🚨 OpenClaw joins OpenAI!! 😱', author: '@brandnat', views: '1.9M', likes: '72.3K', comments: '4.2K' },
+            { file: '10_twitter_api.mp4', title: 'Twitter API drama - Lex Fridman Podcast', author: '@lexfridman', views: '2.4M', likes: '98.7K', comments: '6.7K' },
+            { file: '11_spanish_news.mp4', title: '¿Conoces Openclaw? 🇪🇸', author: '@macariva', views: '445K', likes: '18.2K', comments: '567' },
+            { file: '12_not_for_everyone.mp4', title: 'Clawdbot is NOT for everyone', author: '@iamkylebalmer', views: '1.1M', likes: '41.2K', comments: '2.8K' },
+            { file: '13_existing_tools.mp4', title: "We've been able to do this stuff with existing tools", author: '@iamkylebalmer', views: '923K', likes: '35.6K', comments: '1.4K' },
+            { file: '14_hostinger.mp4', title: 'Moltbot catching huge waves on Hostinger', author: '@hostingeracademy', views: '678K', likes: '24.5K', comments: '789' },
+            { file: '15_ai_adoption.mp4', title: 'Clawdbot challenges how AI adoption really looks', author: '@calebwritescode', views: '1.3M', likes: '52.1K', comments: '1.9K' }
+        ];
+
+        let currentView = 'feed';
+        
+        function loadFeed() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = videos.map((v, i) => `
+                <div class="video-card" onclick="openModal(${i})">
+                    <video src="${v.file}" preload="metadata" loop muted></video>
+                    <div class="video-overlay">
+                        <div class="video-info">
+                            <div class="video-title">${v.title}</div>
+                            <div class="video-meta">
+                                <span>@${v.author.replace('@', '')}</span>
+                                <span>·</span>
+                                <span class="hashtag">#OpenClaw</span>
+                                <span>·</span>
+                                <span>${v.views}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-actions">
+                        <div class="action-btn" onclick="event.stopPropagation(); like(this)">
+                            <div class="action-icon">❤️</div>
+                            <span class="action-count">${v.likes}</span>
+                        </div>
+                        <div class="action-btn" onclick="event.stopPropagation()">
+                            <div class="action-icon">💬</div>
+                            <span class="action-count">${v.comments}</span>
+                        </div>
+                        <div class="action-btn" onclick="event.stopPropagation()">
+                            <div class="action-icon">↪️</div>
+                            <span class="action-count">Share</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function loadGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = videos.map((v, i) => `
+                <div class="grid-item" onclick="openModal(${i})">
+                    <video src="${v.file}" muted preload="metadata"></video>
+                    <div class="play-icon">▶️</div>
+                    <div class="view-count">▶ ${formatViews(v.views)}</div>
+                </div>
+            `).join('');
+        }
+        
+        function formatViews(v) {
+            return v;
+        }
+        
+        function switchTab(tab) {
+            // Update tab styling
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            if (tab === 'following' || tab === 'for-you') {
+                document.getElementById('feed').style.display = 'block';
+                document.getElementById('grid').style.display = 'none';
+                currentView = 'feed';
+                if (tab === 'following') document.querySelector('.nav-item').classList.add('active');
+            } else if (tab === 'videos') {
+                document.getElementById('feed').style.display = 'none';
+                document.getElementById('grid').style.display = 'grid';
+                document.querySelectorAll('.nav-item')[1].classList.add('active');
+            }
+        }
+        
+        function openModal(index) {
+            const video = videos[index];
+            const modal = document.getElementById('videoModal');
+            const modalVideo = document.getElementById('modalVideo');
+            
+            modal.classList.add('active');
+            modalVideo.src = video.file;
+            modalVideo.play();
+            
+            // Auto-play next video
+            modalVideo.onended = () => {
+                if (index < videos.length - 1) {
+                    openModal(index + 1);
+                } else {
+                    closeModal();
+                }
+            };
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('videoModal');
+            const modalVideo = document.getElementById('modalVideo');
+            
+            modalVideo.pause();
+            modalVideo.src = '';
+            modal.classList.remove('active');
+        }
+        
+        function like(btn) {
+            btn.classList.toggle('playing');
+            const count = btn.querySelector('.action-count');
+            if (btn.classList.contains('playing')) {
+                count.textContent = (parseFloat(count.textContent.replace('K', '')) + 0.1).toFixed(1) + 'K';
+            }
+        }
+        
+        // Auto-play videos in feed when visible
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                if (entry.isIntersecting) {
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+            });
+        }, { threshold: 0.6 });
+        
+        // Initialize
+        loadFeed();
+        loadGrid();
+        
+        // Observe after DOM is ready
+        setTimeout(() => {
+            document.querySelectorAll('.video-card').forEach(card => observer.observe(card));
+        }, 100);
+    </script>
+</body>
+</html>

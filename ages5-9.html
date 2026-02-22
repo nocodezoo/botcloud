@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mom and Dad AI — Ages 5-9</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a12;
+            --surface: #1a1a2e;
+            --surface-light: #252542;
+            --accent: #ff6b9d;
+            --accent-warm: #ffa07a;
+            --accent-gradient: linear-gradient(135deg, #ff6b9d 0%, #ffa07a 100%);
+            --text: #ffffff;
+            --text-secondary: #b8b8cc;
+            --text-muted: #6b6b80;
+            --border: #2d2d45;
+            --success: #00d4aa;
+        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+        .age-badge { background: var(--accent-gradient); color: #000; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        
+        .setup-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .setup-section h3 { font-size: 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .setup-section p { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row input, .form-row select { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-light); color: var(--text); font-size: 14px; }
+        .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); }
+        
+        .tag-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { padding: 8px 16px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s; background: var(--surface-light); }
+        .tag:hover { border-color: var(--accent); }
+        .tag.selected { background: var(--accent); color: #000; border-color: var(--accent); }
+        
+        .challenge-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .challenge-item { background: var(--surface-light); border: 1px solid var(--border); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+        .challenge-item:hover { border-color: var(--accent); }
+        .challenge-item.selected { border-color: var(--accent); background: rgba(255,107,157,0.1); }
+        .challenge-item h4 { font-size: 14px; margin-bottom: 4px; }
+        .challenge-item p { font-size: 12px; color: var(--text-muted); margin: 0; }
+        
+        .btn { padding: 14px 28px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-primary { background: var(--accent-gradient); color: #000; }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary { background: var(--surface-light); color: var(--text); border: 1px solid var(--border); }
+        
+        .daily-prompt { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; margin-bottom: 24px; display: none; }
+        .daily-prompt.visible { display: block; }
+        .prompt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .prompt-label { background: var(--surface-light); padding: 6px 12px; border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+        .prompt-content { font-size: 22px; line-height: 1.5; margin-bottom: 24px; }
+        .prompt-tip { background: var(--surface-light); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .prompt-tip strong { color: var(--accent); }
+        .prompt-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        
+        .sections-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 600px) { .sections-grid { grid-template-columns: 1fr; } .challenge-list { grid-template-columns: 1fr; } }
+        .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+        .section-card:hover { border-color: var(--accent); }
+        .section-card h4 { font-size: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .section-card p { font-size: 13px; color: var(--text-muted); }
+        
+        .content-area { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; display: none; margin-bottom: 24px; }
+        .content-area.active { display: block; }
+        .content-area h2 { font-size: 24px; margin-bottom: 20px; }
+        .content-list { list-style: none; }
+        .content-list li { padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+        .content-list li:hover { background: var(--surface-light); }
+        .content-list li:last-child { border: none; }
+        .content-list h4 { font-size: 15px; margin-bottom: 6px; }
+        .content-list .desc { font-size: 13px; color: var(--text-muted); }
+        
+        .profile-summary { background: var(--surface-light); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: none; }
+        .profile-summary.visible { display: block; }
+        .profile-summary h4 { font-size: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .profile-summary .edit-link { color: var(--accent); font-size: 13px; cursor: pointer; }
+        .profile-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .profile-tag { background: var(--surface); padding: 4px 10px; border-radius: 12px; font-size: 12px; color: var(--text-secondary); }
+        
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: #000; padding: 14px 24px; border-radius: 10px; font-weight: 600; transition: transform 0.3s; z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">👨‍👩‍👧‍👦 <strong>Mom and Dad AI</strong></div>
+            <div class="age-badge">Ages 5-9</div>
+        </header>
+        
+        <!-- Profile Summary (shown when profile exists) -->
+        <div class="profile-summary" id="profileSummary">
+            <h4>👶 <span id="summaryName">Emma</span>, age <span id="summaryAge">5</span> <span class="edit-link" onclick="editProfile()">Edit</span></h4>
+            <div class="profile-tags" id="profileTags"></div>
+        </div>
+        
+        <!-- Step 1: Basic Info -->
+        <div class="setup-section" id="basicInfo">
+            <h3>👶 About Your Child</h3>
+            <p>Let's get to know your little one better</p>
+            
+            <div class="form-group">
+                <label>What's their name?</label>
+                <div class="form-row">
+                    <input type="text" id="childName" placeholder="Name" value="Emma">
+                    <input type="number" id="childAge" placeholder="Age" value="5" min="5" max="9">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="nextStep('basicInfo', 'interests')">Continue →</button>
+        </div>
+        
+        <!-- Step 2: Interests -->
+        <div class="setup-section hidden" id="interests">
+            <h3>🎯 Interests</h3>
+            <p>What does your child love? Select all that apply</p>
+            
+            <div class="form-group">
+                <div class="tag-group" id="interestTags">
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🐾 Animals</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">⚽ Sports</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🎨 Art & Drawing</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🎵 Music</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">📚 Reading</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🎮 Gaming</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🔬 Science</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🌳 Nature</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🧸 Toys</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🚗 Vehicles</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">👸 Princess/Fantasy</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🦖 Dinosaurs</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🌈 Space</span>
+                    <span class="tag" onclick="toggleTag(this, 'interests')">🏖️ Beaches</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="prevStep('interests', 'basicInfo')">← Back</button>
+            <button class="btn btn-primary" onclick="nextStep('interests', 'personality')">Continue →</button>
+        </div>
+        
+        <!-- Step 3: Personality -->
+        <div class="setup-section hidden" id="personality">
+            <h3>🌟 Personality</h3>
+            <p>How would you describe their temperament?</p>
+            
+            <div class="form-group">
+                <label>General personality (select up to 3)</label>
+                <div class="tag-group" id="personalityTags">
+                    <span class="tag" onclick="toggleTag(this, 'personality')">😊 Outgoing</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">😳 Shy</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">💪 Strong-willed</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🥺 Sensitive</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🤸 Energetic</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🤔 Thoughtful</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">😎 Chill</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🎭 Dramatic</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🧩 Curious</span>
+                    <span class="tag" onclick="toggleTag(this, 'personality')">🛡️ Protective</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="prevStep('personality', 'interests')">← Back</button>
+            <button class="btn btn-primary" onclick="nextStep('personality', 'challenges')">Continue →</button>
+        </div>
+        
+        <!-- Step 4: Challenges -->
+        <div class="setup-section hidden" id="challenges">
+            <h3>🎯 Areas to Work On</h3>
+            <p>What challenges would you like help with?</p>
+            
+            <div class="form-group">
+                <div class="challenge-list" id="challengeList">
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>📱 Screen Time</h4>
+                        <p>Managing device usage</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>😴 Bedtime</h4>
+                        <p>Sleep struggles</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>🍽️ Eating</h4>
+                        <p>Picky eating</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>📝 Homework</h4>
+                        <p>Focus and motivation</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>🤝 Sharing</h4>
+                        <p>Social conflicts</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>😰 Anxiety</h4>
+                        <p>Worry and nervousness</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>😤 Emotional</h4>
+                        <p>Big feelings, meltdowns</p>
+                    </div>
+                    <div class="challenge-item" onclick="toggleChallenge(this)">
+                        <h4>🗣️ Communication</h4>
+                        <p>Expressing needs</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="prevStep('challenges', 'personality')">← Back</button>
+            <button class="btn btn-primary" onclick="finishSetup()">Finish Setup 🎉</button>
+        </div>
+        
+        <!-- Main App (shown after setup) -->
+        <div id="mainApp" class="hidden">
+            <!-- Daily Prompt -->
+            <div class="daily-prompt visible" id="dailyPrompt">
+                <div class="prompt-header">
+                    <span class="prompt-label">📅 Today's Conversation</span>
+                    <span class="prompt-label" id="streakBadge">🔥 3 day streak!</span>
+                </div>
+                
+                <div class="prompt-content" id="promptContent">
+                    "Emma, if you could have any animal as a pet, what would it be and what would you name it?"
+                </div>
+                
+                <div class="prompt-tip">
+                    <strong>💡 Why this works:</strong> This question helps your child think about responsibility, creativity, and helps you understand what animals they love and why.
+                </div>
+                
+                <div class="prompt-actions">
+                    <button class="btn btn-primary" onclick="completePrompt()">✅ We Had This Conversation</button>
+                    <button class="btn btn-secondary" onclick="newPrompt()">🔄 Get Another Prompt</button>
+                </div>
+            </div>
+            
+            <!-- Quick Sections -->
+            <div class="sections-grid">
+                <div class="section-card" onclick="showSection('conversations')">
+                    <h4>💬 Conversation Starters</h4>
+                    <p>Questions tailored to your child</p>
+                </div>
+                <div class="section-card" onclick="showSection('activities')">
+                    <h4>🎨 Activities</h4>
+                    <p>Play and bonding ideas</p>
+                </div>
+                <div class="section-card" onclick="showSection('emotions')">
+                    <h4>😊 Emotional Support</h4>
+                    <p>Help them understand feelings</p>
+                </div>
+                <div class="section-card" onclick="showSection('challenges')">
+                    <h4>🎯 Challenge Help</h4>
+                    <p>Specific guidance for your areas</p>
+                </div>
+            </div>
+            
+            <!-- Content Sections -->
+            <div class="content-area" id="conversations">
+                <h2>💬 Conversation Starters</h2>
+                <ul class="content-list" id="conversationsList"></ul>
+            </div>
+            
+            <div class="content-area" id="activities">
+                <h2>🎨 Activities</h2>
+                <ul class="content-list" id="activitiesList"></ul>
+            </div>
+            
+            <div class="content-area" id="emotions">
+                <h2>😊 Emotional Support</h2>
+                <ul class="content-list" id="emotionsList"></ul>
+            </div>
+            
+            <div class="content-area" id="challengesSection">
+                <h2>🎯 Challenge Help</h2>
+                <ul class="content-list" id="challengesList"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">Saved!</div>
+    
+    <script>
+        // Data
+        const conversationData = {
+            default: [
+                { title: "Favorite thing today", text: "What was your favorite part of today?" },
+                { title: "Dream job", text: "What do you want to be when you grow up?" },
+                { title: "Friend time", text: "Who did you play with today? What did you do?" },
+                { title: "Feelings check", text: "How are you feeling right now? Happy, sad, excited, or something else?" },
+                { title: "Silly question", text: "What's the silliest thing you can think of?" },
+                { title: "Meal chat", text: "If you could eat one food forever, what would it be?" },
+                { title: "Story time", text: "Can you tell me a story about a dinosaur?" },
+                { title: "School chat", text: "What was the best thing that happened at school today?" },
+                { title: "Future dreams", text: "If you could have any superpower, what would it be?" },
+                { title: "Kindness", text: "Did anyone do something nice for you today?" }
+            ],
+            animals: [
+                { title: "Dream pet", text: "If you could have any animal as a pet, what would it be and what would you name it?" },
+                { title: "Zoo trip", text: "If we went to the zoo, which animal would you want to see first?" },
+                { title: "Animal facts", text: "What's your favorite animal fact you've learned?" }
+            ],
+            sports: [
+                { title: "Favorite sport", text: "What's your favorite sport to play or watch?" },
+                { title: "Team spirit", text: "If you had your own team, what would it be called?" },
+                { title: "Olympic dreams", text: "If you could be in the Olympics, which sport would you do?" }
+            ],
+            art: [
+                { title: "Masterpiece", text: "What would you draw if you could be famous for one artwork?" },
+                { title: "Colors", text: "What colors make you feel happy?" },
+                { title: "Art class", text: "What did you make in art class recently?" }
+            ]
+        };
+        
+        const activitiesData = [
+            { title: "Draw together", desc: "Draw your favorite animal and let them draw theirs. Compare!" },
+            { title: "Kitchen helpers", desc: "Let them help cook simple foods - mixing, stirring are fun" },
+            { title: "Build challenge", desc: "Build something with LEGO. See who makes the tallest!" },
+            { title: "Nature walk", desc: "Collect leaves, rocks. Make art with what you find!" },
+            { title: "Dance party", desc: "Put on music and dance together. Silly moves encouraged!" },
+            { title: "Storytime", desc: "Take turns telling a story. You start, then them..." },
+            { title: "Puzzle time", desc: "Work on a puzzle together. 50-100 pieces is perfect." },
+            { title: "Garden fun", desc: "Plant something together. Watch it grow!" }
+        ];
+        
+        const emotionsData = [
+            { title: "Naming feelings", text: "It's okay to feel [mad/sad/scared]. Can you tell me more?" },
+            { title: "Body clues", text: "Where do you feel it in your body when you're [emotion]?" },
+            { title: "Calm down", text: "Let's take 3 deep breaths together. Breathe in... out..." },
+            { title: "Emotion vocabulary", text: "Can you name 5 different feelings?" },
+            { title: "Good enough", text: "It's okay to make mistakes. That's how we learn!" },
+            { title: "Frustration help", text: "When you feel frustrated, what helps you feel better?" }
+        ];
+        
+        const challengeData = {
+            "Screen Time": [
+                { title: "Create a deal", text: "Let's make a chart of when we can use screens. What sounds fair?" },
+                { title: "Alternative activities", text: "When you want screen time, what's another fun thing we could do?" },
+                { title: "Set boundaries", text: "Let's pick one day this week to have a 'no screens' day" }
+            ],
+            "Bedtime": [
+                { title: "Bedtime routine", text: "What helps you feel sleepy? A story? Music? Quiet time?" },
+                { title: "Wind down", text: "Let's pick a wind-down activity before bed" },
+                { title: "Consistency", text: "What time feels right for bedtime?" }
+            ],
+            "Eating": [
+                { title: "Food explorer", text: "Want to be a food explorer? Try one new bite this week" },
+                { title: "Fun foods", text: "If you could make any food, what would it look like?" },
+                { title: "Growing food", text: "What food would you like to grow in a garden?" }
+            ],
+            "Homework": [
+                { title: "Homework helper", text: "What part of homework is hardest for you?" },
+                { title: "Break it down", text: "Let's break this into small pieces. What's the first step?" },
+                { title: "Reward chart", text: "After homework, what's a fun thing we could do?" }
+            ],
+            "Sharing": [
+                { title: "Taking turns", text: "How does it feel when you get a turn? How about waiting?" },
+                { title: "Making friends", text: "What's a nice way to ask to play with someone?" },
+                { title: "Feelings", text: "How did you feel when you had to share your toy?" }
+            ],
+            "Anxiety": [
+                { title: "Worry time", text: "Let's talk about what's making you worried. I'm here to listen." },
+                { title: "Breathe", text: "When you feel worried, let's take slow breaths together" },
+                { title: "Best case", text: "What's the best thing that could happen?" }
+            ],
+            "Emotional": [
+                { title: "Big feelings", text: "It's okay to feel big feelings. They're valid." },
+                { title: "Body check", text: "Where do you feel [mad/sad] in your body?" },
+                { title: "Calm corner", text: "Let's create a calm corner with things that help you feel better" }
+            ],
+            "Communication": [
+                { title: "Words work", text: "Using words helps people understand what you need" },
+                { title: "Practice", text: "Let's practice saying 'I need help' together" },
+                { title: "Feelings words", text: "Can you tell me how you feel using words?" }
+            ]
+        };
+        
+        // Profile data
+        let profile = {
+            name: '',
+            age: 5,
+            interests: [],
+            personality: [],
+            challenges: [],
+            streak: 3
+        };
+        
+        // Load saved profile
+        function loadProfile() {
+            const saved = localStorage.getItem('momdadai_profile');
+            if (saved) {
+                profile = JSON.parse(saved);
+                showMainApp();
+            }
+        }
+        
+        function saveProfile() {
+            localStorage.setItem('momdadai_profile', JSON.stringify(profile));
+        }
+        
+        // Navigation
+        function nextStep(from, to) {
+            // Save basic info
+            if (from === 'basicInfo') {
+                profile.name = document.getElementById('childName').value || 'Emma';
+                profile.age = parseInt(document.getElementById('childAge').value) || 5;
+            }
+            document.getElementById(from).classList.add('hidden');
+            document.getElementById(to).classList.remove('hidden');
+            saveProfile();
+        }
+        
+        function prevStep(from, to) {
+            document.getElementById(from).classList.add('hidden');
+            document.getElementById(to).classList.remove('hidden');
+        }
+        
+        // Toggle tags
+        function toggleTag(el, type) {
+            el.classList.toggle('selected');
+            const value = el.textContent.trim();
+            
+            if (type === 'interests') {
+                if (el.classList.contains('selected')) {
+                    if (!profile.interests.includes(value)) profile.interests.push(value);
+                } else {
+                    profile.interests = profile.interests.filter(i => i !== value);
+                }
+            } else if (type === 'personality') {
+                if (el.classList.contains('selected')) {
+                    if (profile.personality.length < 3 && !profile.personality.includes(value)) {
+                        profile.personality.push(value);
+                    }
+                } else {
+                    profile.personality = profile.personality.filter(p => p !== value);
+                }
+            }
+        }
+        
+        // Toggle challenges
+        function toggleChallenge(el) {
+            el.classList.toggle('selected');
+            const title = el.querySelector('h4').textContent;
+            if (el.classList.contains('selected')) {
+                if (!profile.challenges.includes(title)) profile.challenges.push(title);
+            } else {
+                profile.challenges = profile.challenges.filter(c => c !== title);
+            }
+        }
+        
+        // Finish setup
+        function finishSetup() {
+            saveProfile();
+            showMainApp();
+            showToast('Profile saved!');
+        }
+        
+        // Show main app
+        function showMainApp() {
+            document.getElementById('basicInfo').classList.add('hidden');
+            document.getElementById('interests').classList.add('hidden');
+            document.getElementById('personality').classList.add('hidden');
+            document.getElementById('challenges').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update summary
+            document.getElementById('profileSummary').classList.add('visible');
+            document.getElementById('summaryName').textContent = profile.name;
+            document.getElementById('summaryAge').textContent = profile.age;
+            
+            // Build tags
+            const allTags = [...profile.interests, ...profile.personality].slice(0, 6);
+            document.getElementById('profileTags').innerHTML = allTags.map(t => 
+                `<span class="profile-tag">${t}</span>`
+            ).join('');
+            
+            // Load saved selections
+            document.getElementById('childName').value = profile.name;
+            document.getElementById('childAge').value = profile.age;
+            
+            // Show personalized prompts
+            updatePrompt();
+        }
+        
+        function editProfile() {
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('profileSummary').classList.remove('visible');
+            document.getElementById('basicInfo').classList.remove('hidden');
+        }
+        
+        // Prompts
+        function updatePrompt() {
+            // Build personalized prompt based on interests
+            let prompts = conversationData.default;
+            
+            for (const interest of profile.interests) {
+                if (conversationData[interest.toLowerCase().split(' ')[0]]) {
+                    prompts = [...prompts, ...conversationData[interest.toLowerCase().split(' ')[0]]];
+                }
+            }
+            
+            const random = prompts[Math.floor(Math.random() * prompts.length)];
+            document.getElementById('promptContent').innerHTML = `"${profile.name}, ${random.text.toLowerCase()}"`;
+            
+            // Update streak
+            document.getElementById('streakBadge').textContent = '🔥 ' + profile.streak + ' day streak!';
+        }
+        
+        function newPrompt() {
+            updatePrompt();
+            showToast('New prompt!');
+        }
+        
+        function completePrompt() {
+            profile.streak++;
+            saveProfile();
+            document.getElementById('streakBadge').textContent = '🔥 ' + profile.streak + ' day streak!';
+            updatePrompt();
+            showToast('Great job!');
+        }
+        
+        // Sections
+        function showSection(section) {
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
+            
+            const listId = section === 'challenges' ? 'challengesSection' : section;
+            document.getElementById(listId).classList.add('active');
+            
+            let data, listEl;
+            
+            if (section === 'challenges') {
+                data = [];
+                profile.challenges.forEach(c => {
+                    if (challengeData[c]) data.push(...challengeData[c]);
+                });
+                listEl = document.getElementById('challengesList');
+            } else if (section === 'conversations') {
+                data = conversationData.default;
+                listEl = document.getElementById('conversationsList');
+            } else if (section === 'activities') {
+                data = activitiesData;
+                listEl = document.getElementById('activitiesList');
+            } else if (section === 'emotions') {
+                data = emotionsData;
+                listEl = document.getElementById('emotionsList');
+            }
+            
+            listEl.innerHTML = data.map(item => `
+                <li>
+                    <h4>${item.title}</h4>
+                    <p class="desc">${item.text || item.desc}</p>
+                </li>
+            `).join('');
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // Initialize
+        loadProfile();
+    </script>
+</body>
+</html>

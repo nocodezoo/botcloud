@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦞 ClawSync - Prompt Builder</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg: #0a0a0f;
+            --surface: #14141f;
+            --surface-light: #1e1e2e;
+            --accent: #00d4aa;
+            --accent-dim: #00d4aa33;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --border: #2a2a3a;
+            --warning: #ffaa00;
+            --urgent: #ff4466;
+        }
+        
+        body {
+            font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h1 span { color: var(--accent); }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        
+        .panel {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tag {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag:hover { border-color: var(--accent); }
+        
+        .tag.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .urgency-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .urgency-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-light);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        
+        .urgency-btn:hover { border-color: var(--text-dim); }
+        
+        .urgency-btn.active[data-urgency="low"] { 
+            background: #1a3a2a; border-color: #00d4aa; color: #00d4aa; 
+        }
+        .urgency-btn.active[data-urgency="normal"] { 
+            background: #2a2a3a; border-color: #888; color: #e0e0e0; 
+        }
+        .urgency-btn.active[data-urgency="high"] { 
+            background: #3a2a1a; border-color: #ffaa00; color: #ffaa00; 
+        }
+        .urgency-btn.active[data-urgency="urgent"] { 
+            background: #3a1a2a; border-color: #ff4466; color: #ff4466; 
+        }
+        
+        .vibe-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .vibe-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-light);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        
+        .vibe-btn:hover { border-color: var(--text-dim); }
+        
+        .vibe-btn.active[data-vibe="casual"] { 
+            background: #1a2a3a; border-color: #88ccff; color: #88ccff; 
+        }
+        .vibe-btn.active[data-vibe="professional"] { 
+            background: #2a2a3a; border-color: #aaa; color: #ddd; 
+        }
+        .vibe-btn.active[data-vibe="get-it-done"] { 
+            background: #1a3a1a; border-color: #00d4aa; color: #00d4aa; 
+        }
+        .vibe-btn.active[data-vibe="thorough"] { 
+            background: #3a2a1a; border-color: #ffaa00; color: #ffaa00; 
+        }
+        
+        .context-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .context-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--surface-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .context-item:hover { background: var(--surface); }
+        
+        .context-item input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .preview {
+            background: var(--surface-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            min-height: 100px;
+        }
+        
+        .preview-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        
+        .send-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--accent-dim);
+        }
+        
+        .quick-phrases {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .quick-phrase {
+            background: transparent;
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-phrase:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .hotkey-hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-left: 8px;
+        }
+        
+        .output-section {
+            margin-top: 30px;
+        }
+        
+        .output-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .output-item .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        
+        .output-item .response {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .tips {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .tips h3 {
+            font-size: 14px;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+        
+        .tips ul {
+            list-style: none;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        
+        .tips li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tips li:last-child { border: none; }
+        
+        .tips code {
+            background: var(--surface-light);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦞 <span>ClawSync</span></h1>
+            <div class="status">
+                <div class="status-dot"></div>
+                Claw is online
+            </div>
+        </header>
+        
+        <div class="grid">
+            <!-- Left Column: Input -->
+            <div>
+                <div class="panel">
+                    <div class="panel-title">What do you need?</div>
+                    
+                    <div class="quick-phrases">
+                        <span class="hotkey-hint">Quick add:</span>
+                        <button class="quick-phrase" onclick="addPhrase('Search the web for: ')">🌐 Search</button>
+                        <button class="quick-phrase" onclick="addPhrase('Read file: ')">📄 Read</button>
+                        <button class="quick-phrase" onclick="addPhrase('Create a file at ')">✏️ Create</button>
+                        <button class="quick-phrase" onclick="addPhrase('Run: ')">⚡ Run</button>
+                    </div>
+                    
+                    <label>Your request</label>
+                    <textarea id="prompt" placeholder="Tell me what you want... Be specific about what success looks like."></textarea>
+                    
+                    <div class="tags">
+                        <span class="hotkey-hint">Add context:</span>
+                        <button class="tag" onclick="toggleTag(this)">📁 Files to read</button>
+                        <button class="tag" onclick="toggleTag(this)">🔗 URLs</button>
+                        <button class="tag" onclick="toggleTag(this)">💻 Code snippet</button>
+                        <button class="tag" onclick="toggleTag(this)">📋 Background</button>
+                    </div>
+                </div>
+                
+                <div class="panel" style="margin-top: 20px;">
+                    <div class="panel-title">How important is this?</div>
+                    <div class="urgency-selector">
+                        <button class="urgency-btn" data-urgency="low" onclick="setUrgency('low')">Low</button>
+                        <button class="urgency-btn active" data-urgency="normal" onclick="setUrgency('normal')">Normal</button>
+                        <button class="urgency-btn" data-urgency="high" onclick="setUrgency('high')">High</button>
+                        <button class="urgency-btn" data-urgency="urgent" onclick="setUrgency('urgent')">Urgent</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <label>Additional context (optional)</label>
+                        <input type="text" id="context" placeholder="e.g., we're working on the Polymarket bot...">
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <div class="panel-title" style="margin-bottom: 10px;">What's the vibe?</div>
+                        <div class="vibe-selector">
+                            <button class="vibe-btn" data-vibe="casual" onclick="setVibe('casual')">😎 Casual</button>
+                            <button class="vibe-btn" data-vibe="professional" onclick="setVibe('professional')">👔 Pro</button>
+                            <button class="vibe-btn active" data-vibe="get-it-done" onclick="setVibe('get-it-done')">⚡ Get It Done</button>
+                            <button class="vibe-btn" data-vibe="thorough" onclick="setVibe('thorough')">🔍 Thorough</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Preview & Tips -->
+            <div>
+                <div class="panel">
+                    <div class="panel-title">📝 Prompt Preview</div>
+                    <div class="preview" id="preview">Your optimized prompt will appear here...</div>
+                    
+                    <button class="send-btn" onclick="sendToClaw()">🚀 Send to Claw</button>
+                </div>
+                
+                <div class="tips">
+                    <h3>💡 Tips for better prompts</h3>
+                    <ul>
+                        <li><code>Specific > General</code> — "Create a login form with email & password" beats "make a form"</li>
+                        <li><code>Include examples</code> — "Like this: [example]" helps me understand</li>
+                        <li><code>Tell me the vibe</code> — "Casual" / "Professional" / "Just get it done"</li>
+                        <li><code>Show, don't tell</code> — Links to references help a lot</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <div class="panel-title">Recent Conversations</div>
+            <div id="outputs"></div>
+        </div>
+    </div>
+    
+    <script>
+        let urgency = 'normal';
+        let tags = [];
+        
+        function updatePreview() {
+            const prompt = document.getElementById('prompt').value || '[Your request]';
+            const context = document.getElementById('context').value;
+            const urgencyText = {
+                'low': 'When you have time, ',
+                'normal': '',
+                'high': 'Important: ',
+                'urgent': 'URGENT: '
+            };
+            const vibeText = {
+                'casual': '😎 Casual — keep it fun, jokes welcome',
+                'professional': '👔 Professional — clean, formal, to the point',
+                'get-it-done': '⚡ Get it done — fast, efficient, minimal chat',
+                'thorough': '🔍 Thorough — deep research, all details, explain your thinking'
+            };
+            
+            let preview = urgencyText[urgency] + prompt;
+            
+            if (context) {
+                preview += '\n\nContext: ' + context;
+            }
+            
+            preview += '\n\nVibe: ' + vibeText[vibe];
+            
+            if (tags.length > 0) {
+                preview += '\n\nTags: ' + tags.join(', ');
+            }
+            
+            document.getElementById('preview').textContent = preview;
+        }
+        
+        function setUrgency(level) {
+            urgency = level;
+            document.querySelectorAll('.urgency-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.urgency === level);
+            });
+            updatePreview();
+        }
+        
+        let vibe = 'get-it-done';
+        
+        function setVibe(v) {
+            vibe = v;
+            document.querySelectorAll('.vibe-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.vibe === v);
+            });
+            updatePreview();
+        }
+        
+        function toggleTag(el) {
+            el.classList.toggle('active');
+            const text = el.textContent;
+            if (tags.includes(text)) {
+                tags = tags.filter(t => t !== text);
+            } else {
+                tags.push(text);
+            }
+            updatePreview();
+        }
+        
+        function addPhrase(phrase) {
+            const input = document.getElementById('prompt');
+            input.value += phrase;
+            input.focus();
+            updatePreview();
+        }
+        
+        function sendToClaw() {
+            const prompt = document.getElementById('prompt').value;
+            const context = document.getElementById('context').value;
+            const vibeText = {
+                'casual': '😎 Casual — keep it fun, jokes welcome',
+                'professional': '👔 Professional — clean, formal, to the point',
+                'get-it-done': '⚡ Get it done — fast, efficient, minimal chat',
+                'thorough': '🔍 Thorough — deep research, all details, explain your thinking'
+            };
+            
+            if (!prompt) return;
+            
+            // Build the full message
+            let message = prompt;
+            if (urgency === 'urgent') message = 'URGENT: ' + message;
+            if (urgency === 'high') message = 'Important: ' + message;
+            if (context) message += '\n\nContext: ' + context;
+            message += '\n\nVibe: ' + vibeText[vibe];
+            
+            // Add to outputs (simulated - in real app this would send to API)
+            const output = document.getElementById('outputs');
+            const item = document.createElement('div');
+            item.className = 'output-item';
+            item.innerHTML = `
+                <div class="meta">
+                    <span>${new Date().toLocaleTimeString()}</span>
+                    <span>${urgency} · ${vibe}</span>
+                </div>
+                <div class="response">${message}</div>
+            `;
+            output.insertBefore(item, output.firstChild);
+            
+            // Clear inputs
+            document.getElementById('prompt').value = '';
+            document.getElementById('context').value = '';
+            tags = [];
+            document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+            urgency = 'normal';
+            vibe = 'get-it-done';
+            setUrgency('normal');
+            setVibe('get-it-done');
+            
+            // In a real implementation, this would send to Discord via webhook or API
+            alert('Prompt ready! Copy it to send to me:\n\n' + message);
+        }
+        
+        // Auto-update preview on typing
+        document.getElementById('prompt').addEventListener('input', updatePreview);
+        document.getElementById('context').addEventListener('input', updatePreview);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                sendToClaw();
+            }
+        });
+        
+        updatePreview();
+    </script>
+</body>
+</html>

@@ -183,7 +183,7 @@ class TikTokEditor:
         self.line_spacing_var = tk.DoubleVar(value=1.0)
         spacing_frame = ttk.Frame(right_frame)
         spacing_frame.pack(fill=tk.X, pady=(0, 8))
-        ttk.Scale(spacing_frame, from_=0.5, to=2.0, orient=tk.HORIZONTAL, variable=self.line_spacing_var, command=lambda _: self.update_preview()).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Scale(spacing_frame, from_=1.0, to=3.0, orient=tk.HORIZONTAL, variable=self.line_spacing_var, command=lambda _: self.update_preview()).pack(side=tk.LEFT, fill=tk.X, expand=True)
         ttk.Label(spacing_frame, text="1.0x", width=6).pack(side=tk.LEFT, padx=(5, 0))
         
         # Buttons
@@ -529,7 +529,7 @@ class TikTokEditor:
         start_y = int(height * (self.pos_var.get() / 100)) - total_height // 2
         
         # Draw each line
-        for i, (line, (tw, th)) in enumerate(line_dims):
+        for i, (line, (tw, th)) in enumerate(zip(lines, line_dims)):
             tw_stretched = int(tw * stretch)
             x = (width - tw_stretched) // 2
             y = start_y + int(i * (th + 15 * line_spacing))

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mom and Dad AI — Connect With Your Child Like Never Before</title>
+    <meta name="description" content="The AI-powered companion that helps parents speak their child's language. From ages 5-17.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👨‍👩‍👧‍👦</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a12;
+            --bg-warm: #1a1412;
+            --surface: #1a1a2e;
+            --surface-light: #252542;
+            --cream: #faf8f5;
+            --cream-dark: #e8e4df;
+            --accent: #ff6b9d;
+            --accent-warm: #ffa07a;
+            --accent-gradient: linear-gradient(135deg, #ff6b9d 0%, #ffa07a 100%);
+            --text: #1a1a2e;
+            --text-light: #4a4a5a;
+            --text-muted: #7a7a8a;
+            --text-cream: #faf8f5;
+            --border: #e0dcd8;
+        }
+        
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); line-height: 1.7; overflow-x: hidden; }
+        
+        h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 600; line-height: 1.2; }
+        h1 { font-size: clamp(40px, 6vw, 72px); }
+        h2 { font-size: clamp(32px, 4vw, 52px); }
+        h3 { font-size: clamp(24px, 2.5vw, 36px); }
+        
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        
+        /* Navigation */
+        nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 0; background: rgba(250,248,245,0.95); backdrop-filter: blur(10px); }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-weight: 600; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-size: 15px; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--accent); }
+        
+        /* Hero - Emotional hook */
+        .hero { min-height: 100vh; display: flex; align-items: center; padding: 120px 0 80px; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23ff6b9d" opacity="0.03"/></svg>') no-repeat center center; background-size: 800px; pointer-events: none; }
+        .hero-content { max-width: 700px; position: relative; z-index: 1; }
+        
+        .hero-eyebrow { font-size: 14px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+        .hero h1 { margin-bottom: 28px; color: var(--text); }
+        .hero p { font-size: 20px; color: var(--text-light); margin-bottom: 40px; max-width: 540px; }
+        
+        .hero-visual { position: absolute; right: -5%; top: 50%; transform: translateY(-50%); width: 45%; max-width: 550px; display: none; }
+        @media (min-width: 1024px) { .hero-visual { display: block; } }
+        
+        .hero-image { border-radius: 24px; box-shadow: 0 40px 80px rgba(0,0,0,0.15); }
+        
+        .btn { display: inline-flex; align-items: center; gap: 10px; padding: 18px 36px; border-radius: 14px; font-size: 16px; font-weight: 600; text-decoration: none; transition: all 0.3s; cursor: pointer; border: none; }
+        .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 10px 40px rgba(255,107,157,0.35); }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 50px rgba(255,107,157,0.4); }
+        
+        /* Story Section 1 */
+        .story { padding: 120px 0; }
+        .story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+        @media (max-width: 900px) { .story-grid { grid-template-columns: 1fr; gap: 40px; } }
+        
+        .story-content h2 { margin-bottom: 24px; }
+        .story-content p { font-size: 17px; color: var(--text-light); margin-bottom: 20px; }
+        .story-image { border-radius: 20px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
+        .story-image img { width: 100%; display: block; }
+        
+        /* Quote block */
+        .quote-section { background: var(--bg-warm); padding: 100px 0; color: var(--text-cream); }
+        .quote-content { max-width: 800px; margin: 0 auto; text-align: center; }
+        .quote-content blockquote { font-family: 'Playfair Display', serif; font-size: clamp(24px, 3vw, 36px); line-height: 1.5; margin-bottom: 30px; }
+        .quote-content cite { font-style: normal; font-size: 16px; opacity: 0.7; }
+        
+        /* Story 2 */
+        .story-alt { padding: 120px 0; }
+        .story-alt .story-grid { direction: rtl; }
+        @media (max-width: 900px) { .story-alt .story-grid { direction: ltr; } }
+        
+        /* Problem section */
+        .problems { background: var(--cream-dark); padding: 120px 0; }
+        .problems h2 { text-align: center; margin-bottom: 60px; }
+        .problems-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        @media (max-width: 900px) { .problems-grid { grid-template-columns: 1fr; } }
+        
+        .problem-card { background: #fff; border-radius: 20px; padding: 40px 30px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .problem-card:hover { transform: translateY(-5px); }
+        .problem-icon { font-size: 48px; margin-bottom: 20px; }
+        .problem-card h3 { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+        .problem-card p { font-size: 15px; color: var(--text-light); }
+        
+        /* Solution */
+        .solution { padding: 120px 0; }
+        .solution-header { text-align: center; max-width: 700px; margin: 0 auto 60px; }
+        .solution-header h2 { margin-bottom: 20px; }
+        .solution-header p { font-size: 18px; color: var(--text-light); }
+        
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        @media (max-width: 900px) { .features-grid { grid-template-columns: 1fr; } }
+        
+        .feature-card { padding: 30px; border-radius: 16px; background: var(--cream); border: 1px solid var(--border); }
+        .feature-icon { width: 60px; height: 60px; background: var(--accent-gradient); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+        .feature-card h3 { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+        .feature-card p { font-size: 14px; color: var(--text-light); }
+        
+        /* Social proof */
+        .social-proof { background: var(--accent-gradient); padding: 80px 0; color: #fff; text-align: center; }
+        .social-proof h2 { margin-bottom: 20px; }
+        .social-proof p { font-size: 18px; opacity: 0.9; }
+        
+        /* Pricing - The closer */
+        .pricing { padding: 120px 0; background: var(--bg); color: var(--text-cream); }
+        .pricing-header { text-align: center; max-width: 600px; margin: 0 auto 50px; }
+        .pricing-header h2 { margin-bottom: 16px; }
+        .pricing-header p { font-size: 18px; opacity: 0.7; }
+        
+        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; }
+        @media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
+        
+        .price-card { background: var(--surface); border: 2px solid var(--border); border-radius: 24px; padding: 40px 30px; text-align: center; transition: all 0.3s; }
+        .price-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .price-card.featured { border-color: var(--accent); transform: scale(1.05); position: relative; }
+        .price-card.featured::before { content: 'Most Popular'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 6px 16px; border-radius: 20px; }
+        
+        .price-card .age { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .price-card .price { font-size: 48px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+        .price-card .period { font-size: 14px; opacity: 0.6; margin-bottom: 24px; }
+        .price-card ul { list-style: none; text-align: left; margin-bottom: 30px; }
+        .price-card li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .price-card li::before { content: '✓'; color: var(--accent); font-weight: 600; }
+        
+        .price-card .btn { width: 100%; justify-content: center; }
+        
+        .guarantee { text-align: center; margin-top: 40px; font-size: 14px; opacity: 0.6; }
+        
+        /* CTA Banner */
+        .cta-banner { background: linear-gradient(135deg, #1a1412 0%, #2a1f1a 100%); padding: 60px 0; text-align: center; color: var(--text-cream); }
+        .cta-banner h3 { margin-bottom: 16px; }
+        .cta-banner p { margin-bottom: 24px; opacity: 0.8; }
+        
+        /* Footer */
+        footer { background: var(--bg); padding: 60px 0 30px; color: var(--text-cream); border-top: 1px solid var(--border); }
+        .footer-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .footer-content p { font-size: 14px; opacity: 0.5; }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate { animation: fadeInUp 0.8s ease forwards; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <a href="#" class="logo">👨‍👩‍👧‍👦 Mom and Dad AI</a>
+            <div class="nav-links">
+                <a href="#story">Our Story</a>
+                <a href="#problems">Why It Matters</a>
+                <a href="#solution">How It Works</a>
+                <a href="#pricing">Pricing</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-eyebrow">For Parents Who Want More</div>
+                <h1>They Grow Up So Fast. Don't Let The Connection Slip Away.</h1>
+                <p>Every year, your child lives in a world you understand less. The gap widens. But it doesn't have to be that way. Here's how to stay connected.</p>
+                <a href="#pricing" class="btn btn-primary">Start Connecting Today →</a>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-image">
+                    <svg viewBox="0 0 500 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="500" height="600" rx="24" fill="#f5f0eb"/>
+                        <circle cx="250" cy="200" r="80" fill="#ff6b9d" opacity="0.2"/>
+                        <circle cx="250" cy="200" r="50" fill="#ff6b9d" opacity="0.4"/>
+                        <circle cx="250" cy="200" r="25" fill="#ff6b9d"/>
+                        <rect x="100" y="320" width="300" height="8" rx="4" fill="#e0dcd8"/>
+                        <rect x="100" y="350" width="250" height="8" rx="4" fill="#e0dcd8"/>
+                        <rect x="100" y="380" width="200" height="8" rx="4" fill="#e0dcd8"/>
+                        <rect x="100" y="410" width="280" height="8" rx="4" fill="#e0dcd8"/>
+                        <rect x="100" y="440" width="180" height="8" rx="4" fill="#e0dcd8"/>
+                        <circle cx="150" cy="520" r="30" fill="#ffa07a" opacity="0.6"/>
+                        <circle cx="350" cy="520" r="30" fill="#ffa07a" opacity="0.6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Story Section 1 -->
+    <section class="story" id="story">
+        <div class="container">
+            <div class="story-grid">
+                <div class="story-content">
+                    <h2>Remember When They Couldn't Wait To Tell You Everything?</h2>
+                    <p>Once upon a time, your little one would run to you the moment you walked through the door. "Mommy! Daddy! You won't believe what happened!"</p>
+                    <p>Every thought. Every feeling. Every tiny adventure. They couldn't wait to share it all with you.</p>
+                    <p>Those moments? They're fading. And if you're not careful, they'll stop sharing altogether.</p>
+                </div>
+                <div class="story-image">
+                    <svg viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="500" height="400" rx="20" fill="#faf8f5"/>
+                        <rect x="50" y="50" width="400" height="300" rx="16" fill="#ff6b9d" opacity="0.1"/>
+                        <text x="250" y="180" text-anchor="middle" font-family="serif" font-size="28" fill="#4a4a5a">"Today I learned..."</text>
+                        <text x="250" y="220" text-anchor="middle" font-family="serif" font-size="20" fill="#7a7a8a">They used to share everything</text>
+                        <circle cx="250" cy="300" r="40" fill="#ffa07a" opacity="0.5"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Quote -->
+    <section class="quote-section">
+        <div class="container">
+            <div class="quote-content">
+                <blockquote>"The day a child stops seeking your help is the day they've stopped seeking your connection."</blockquote>
+                <cite>— A parent who almost lost that connection</cite>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Story Section 2 -->
+    <section class="story story-alt">
+        <div class="container">
+            <div class="story-grid">
+                <div class="story-image">
+                    <svg viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="500" height="400" rx="20" fill="#faf8f5"/>
+                        <rect x="50" y="50" width="400" height="300" rx="16" fill="#ffa07a" opacity="0.1"/>
+                        <text x="250" y="180" text-anchor="middle" font-family="serif" font-size="28" fill="#4a4a5a">"Ugh, you wouldn't understand."</text>
+                        <text x="250" y="220" text-anchor="middle" font-family="serif" font-size="20" fill="#7a7a8a">The gap grows silently</text>
+                        <circle cx="250" cy="300" r="40" fill="#ff6b9d" opacity="0.3"/>
+                        <line x1="200" y1="280" x2="300" y2="280" stroke="#4a4a5a" stroke-width="2" stroke-dasharray="8 4"/>
+                    </svg>
+                </div>
+                <div class="story-content">
+                    <h2>Then One Day, It Changes.</h2>
+                    <p>Without warning, the conversations get shorter. The door closes. The "nothing" becomes a wall between you.</p>
+                    <p>You try. You ask questions. But it's like talking to a stranger who happens to live in your house.</p>
+                    <p>You wonder: Where did my child go? And more importantly — how do I get them back?</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Problems -->
+    <section class="problems" id="problems">
+        <div class="container">
+            <h2>The Gap Is Real. And It's Growing.</h2>
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">📱</div>
+                    <h3>They Live Online</h3>
+                    <p>Your child navigates TikTok, Roblox, and worlds you never learned. You feel like a tourist in their life.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🗣️</div>
+                    <h3>Words Don't Work</h3>
+                    <p>"How was school?" gets you a grunt. You crave real conversations but don't know how to start them.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">⏰</div>
+                    <h3>No Time</h3>
+                    <p>You're exhausted. Work, life, everything. You don't have hours to figure out child psychology.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Solution -->
+    <section class="solution" id="solution">
+        <div class="container">
+            <div class="solution-header">
+                <h2>Here's The Beautiful Part</h2>
+                <p>You can rebuild that connection. One conversation at a time. And you don't have to do it alone.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>They Tell You What To Say</h3>
+                    <p>Get specific conversation starters tailored to your child's age, interests, and personality.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Age-Appropriate</h3>
+                    <p>Not generic advice. Strategies that actually work for a 6-year-old vs a 12-year-old.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Just 2 Minutes A Day</h3>
+                    <p>Quick, actionable prompts that fit your busy life. No fluff. Just results.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Social Proof -->
+    <section class="social-proof">
+        <div class="container">
+            <h2>2,000+ Families Are Connecting Again</h2>
+            <p>Join parents who've rebuilt the bridge with their children</p>
+        </div>
+    </section>
+    
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="pricing-header">
+                <h2>Invest In Your Connection Today</h2>
+                <p>Less than a cup of coffee. More valuable than a parenting book.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="price-card">
+                    <div class="age">Ages 5-9</div>
+                    <div class="price">$9</div>
+                    <div class="period">per month</div>
+                    <ul>
+                        <li>Daily conversation prompts</li>
+                        <li>Child development guides</li>
+                        <li>Screen time strategies</li>
+                        <li>Emotional support tips</li>
+                        <li>Play & bonding activities</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary">Get Started</a>
+                </div>
+                <div class="price-card featured">
+                    <div class="age">Ages 10-13</div>
+                    <div class="price">$15</div>
+                    <div class="period">per month</div>
+                    <ul>
+                        <li>Everything in Ages 5-9</li>
+                        <li>Social media guidance</li>
+                        <li>Bullying prevention</li>
+                        <li>Homework help strategies</li>
+                        <li>Friendship advice</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary">Get Started</a>
+                </div>
+                <div class="price-card">
+                    <div class="age">Ages 14-17</div>
+                    <div class="price">$19</div>
+                    <div class="period">per month</div>
+                    <ul>
+                        <li>Everything in Ages 10-13</li>
+                        <li>Teen mental health</li>
+                        <li>College prep support</li>
+                        <li>Digital citizenship</li>
+                        <li>Independent living prep</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary">Get Started</a>
+                </div>
+            </div>
+            <p class="guarantee">🔒 Cancel anytime. No questions asked. 30-day money-back guarantee.</p>
+        </div>
+    </section>
+    
+    <!-- CTA Banner -->
+    <section class="cta-banner" id="waitlist">
+        <div class="container">
+            <h3>Your Child Is Only Young Once</h3>
+            <p>Don't let the connection fade. Start building bridges today.</p>
+            <a href="#pricing" class="btn btn-primary" style="background: #fff; color: var(--accent);">Get Started Now →</a>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p>© 2026 Mom and Dad AI. All rights reserved.</p>
+                <p>Made with ❤️ for families everywhere</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
