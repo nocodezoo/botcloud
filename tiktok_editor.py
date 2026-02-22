@@ -119,18 +119,6 @@ class TikTokEditor:
         else:
             self.tts_status.config(text="❌ No TTS (install pyttsx3)", foreground="red")
         
-        # Lip Sync option
-        lipsync_frame = ttk.LabelFrame(left_frame, text="👄 Lip Sync", padding=5)
-        lipsync_frame.pack(fill=tk.X, pady=(10, 0))
-        
-        self.lipsync_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(lipsync_frame, text="Enable Lip Sync (needs model)", 
-                       variable=self.lipsync_var).pack(anchor=tk.W)
-        
-        self.lipsync_status = tk.Label(lipsync_frame, text="Requires: pip install lipsync\n+ wav2lip model weights", 
-                                       font=("Arial", 8), foreground="gray")
-        self.lipsync_status.pack(anchor=tk.W)
-        
         # Center: Preview
         center_frame = ttk.LabelFrame(paned, text="Preview", padding=10)
         paned.add(center_frame, weight=3)
@@ -454,12 +442,6 @@ class TikTokEditor:
         if os.path.exists(output_file):
             shutil.copy(output_file, public_file)
         
-        # Apply lip sync if enabled
-        if self.lipsync_var.get() and tts_audio and os.path.exists(tts_audio):
-            self.status_label.config(text="Applying lip sync...", foreground="blue")
-            self.root.update()
-            self.apply_lipsync(output_file)
-        
         self.root.after(0, self.export_done, output_file, public_file if os.path.exists(output_file) else None)
     
     def create_text_overlay(self, width, height, output_path):
@@ -501,57 +483,6 @@ class TikTokEditor:
         draw.text((x, y), text, fill=text_rgb, font=font)
         
         img.save(output_path, 'PNG')
-    
-    def apply_lipsync(self, video_path):
-        """Apply Wav2Lip lip sync to video"""
-        try:
-            from lipsync import LipSync
-            
-            weights_dir = os.path.join(BASE_DIR, "lipsync_weights")
-            model_path = os.path.join(weights_dir, "wav2lip.pth")
-            
-            if not os.path.exists(model_path):
-                messagebox.showwarning("Lip Sync", 
-                    "Model not found!\n\nDownload wav2lip.pth from:\n"
-                    "https://drive.google.com/file/d/1qKU8HG8dR4nW4LvCqpEYmSy6LLpVkZ21/view\n"
-                    "Place in: ~/lipsync_weights/")
-                return False
-            
-            # Get TTS audio path
-            base_name = os.path.splitext(os.path.basename(video_path))[0].replace("_tiktok", "")
-            tts_audio = os.path.join(OUTPUT_DIR, f"{base_name}_tts.mp3")
-            
-            if not os.path.exists(tts_audio):
-                return False
-            
-            output_lip = video_path.replace(".webm", "_lipsync.webm")
-            
-            lip = LipSync(
-                model='wav2lip',
-                checkpoint_path=model_path,
-                nosmooth=True,
-                device='cpu',
-                cache_dir=os.path.join(weights_dir, "cache"),
-                img_size=96,
-                save_cache=True,
-            )
-            
-            lip.sync(video_path, tts_audio, output_lip)
-            
-            if os.path.exists(output_lip):
-                shutil.move(output_lip, video_path)
-                # Update public file
-                public_file = os.path.join(STATIC_DIR, os.path.basename(video_path))
-                shutil.copy(video_path, public_file)
-            
-            return True
-            
-        except ImportError:
-            messagebox.showwarning("Lip Sync", "lipsync not installed.\n\nRun: pip install lipsync")
-        except Exception as e:
-            messagebox.showerror("Lip Sync Error", str(e))
-        
-        return False
     
     def export_done(self, output_file, public_file):
         self.export_btn.config(state=tk.NORMAL)
