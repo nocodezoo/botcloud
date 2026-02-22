@@ -1,0 +1,15 @@
+{
+  "name": "postgenie",
+  "version": "1.0.0",
+  "description": "Automate PostGenie for bulk creating Instagram/TikTok posts",
+  "author": "Claw 🦞",
+  "instructions": "Use pb.js to automate PostGenie. Requires Chrome with remote debugging on port 9222.",
+  "tags": ["postgenie", "automation", "instagram", "tiktok", "ugc", "marketing"],
+  "commands": {
+    "pb": "node pb.js [command]"
+  },
+  "dependencies": {
+    "playwright": "workspace"
+  },
+  "notes": "Bypasses broken OpenClaw browser relay. Chrome must be started manually with --remote-debugging-port=9222"
+}
