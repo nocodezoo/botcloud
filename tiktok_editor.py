@@ -249,6 +249,7 @@ class TikTokEditor:
         
         text = self.text_entry.get() or "Your text"
         font_size = max(16, int(img.height * 0.08 * (self.size_var.get() / 48)))
+        stretch = self.stretch_var.get()
         
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
@@ -258,12 +259,15 @@ class TikTokEditor:
         bbox = draw.textbbox((0, 0), text, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         
-        x = (img.width - tw) // 2
+        # Apply stretch
+        tw_stretched = int(tw * stretch)
+        
+        x = (img.width - tw_stretched) // 2
         y = int(img.height * (self.pos_var.get() / 100)) - th // 2
         
-        # Background
+        # Background (stretched)
         pad = 15
-        bg_box = [x - pad, y - pad, x + tw + pad, y + th + pad]
+        bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
         
         alpha = int(255 * self.alpha_var.get())
         bg_rgb = self.hex_to_rgb(self.bg_color)
@@ -273,9 +277,19 @@ class TikTokEditor:
         else:
             draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
         
-        # Text
+        # Text (stretched)
         text_rgb = self.hex_to_rgb(self.text_color)
-        draw.text((x, y), text, fill=text_rgb, font=font)
+        
+        # Draw to temp and resize for stretch
+        temp_img = Image.new('RGBA', (tw + 30, th + 20), (0, 0, 0, 0))
+        temp_draw = ImageDraw.Draw(temp_img)
+        temp_draw.text((15, 5), text, fill=text_rgb, font=font)
+        
+        if stretch != 1.0:
+            new_w = int(temp_img.width * stretch)
+            temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
+        
+        img.paste(temp_img, (x - 15 + (tw_stretched - temp_img.width)//2, y - 5), temp_img)
         
         self.preview_photo = ImageTk.PhotoImage(img)
         self.preview_label.config(image=self.preview_photo, text="")
