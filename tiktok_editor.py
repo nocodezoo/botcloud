@@ -119,6 +119,18 @@ class TikTokEditor:
         else:
             self.tts_status.config(text="❌ No TTS (install pyttsx3)", foreground="red")
         
+        # Lip Sync option
+        lipsync_frame = ttk.LabelFrame(left_frame, text="👄 Lip Sync", padding=5)
+        lipsync_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        self.lipsync_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(lipsync_frame, text="Enable Lip Sync (needs model)", 
+                       variable=self.lipsync_var).pack(anchor=tk.W)
+        
+        self.lipsync_status = tk.Label(lipsync_frame, text="Requires: pip install lipsync\n+ wav2lip model weights", 
+                                       font=("Arial", 8), foreground="gray")
+        self.lipsync_status.pack(anchor=tk.W)
+        
         # Center: Preview
         center_frame = ttk.LabelFrame(paned, text="Preview", padding=10)
         paned.add(center_frame, weight=3)
@@ -353,7 +365,7 @@ class TikTokEditor:
     
     def do_export(self):
         base_name = os.path.splitext(os.path.basename(self.current_video))[0]
-        output_file = os.path.join(OUTPUT_DIR, f"{base_name}_tiktok.mp4")
+        output_file = os.path.join(OUTPUT_DIR, f"{base_name}_tiktok.webm")
         
         text = self.text_entry.get() or ""
         
@@ -395,8 +407,8 @@ class TikTokEditor:
             self.generate_tts(tts_audio)
         
         # Simple approach: 2-pass export
-        # Pass 1: Add text overlay
-        temp_video = output_file.replace(".mp4", "_temp.mp4")
+        # Pass 1: Add text overlay (to MP4 temp)
+        temp_video = output_file.replace(".webm", "_temp.mp4")
         
         if text_overlay_file and os.path.exists(text_overlay_file):
             # Add text overlay
@@ -411,23 +423,26 @@ class TikTokEditor:
         else:
             shutil.copy(self.current_video, temp_video)
         
-        # Pass 2: Add/replace audio
+        # Pass 2: Convert to WebM
         if tts_audio and os.path.exists(tts_audio):
-            # Replace original audio with TTS
+            # Replace audio with TTS and convert to WebM
             cmd = [
                 "ffmpeg", "-y", "-i", temp_video, "-i", tts_audio,
-                "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
-                "-map", "0:v", "-map", "1:a", "-shortest", "-pix_fmt", "yuv420p", output_file
+                "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0",
+                "-c:a", "libopus", "-b:a", "128k",
+                "-map", "0:v", "-map", "1:a", "-shortest", output_file
             ]
-            subprocess.run(cmd, capture_output=True)
+            subprocess.run(cmd, capture_output=True, timeout=300)
             os.remove(tts_audio)
         else:
-            # Just remux with compatible settings
+            # Convert to WebM without audio replacement
             cmd = [
                 "ffmpeg", "-y", "-i", temp_video,
-                "-c:v", "copy", "-c:a", "copy", "-pix_fmt", "yuv420p", output_file
+                "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0",
+                "-c:a", "libopus", "-b:a", "128k",
+                output_file
             ]
-            subprocess.run(cmd, capture_output=True)
+            subprocess.run(cmd, capture_output=True, timeout=300)
             os.remove(temp_video)
         
         # Also remove temp text overlay
@@ -438,6 +453,12 @@ class TikTokEditor:
         public_file = os.path.join(STATIC_DIR, os.path.basename(output_file))
         if os.path.exists(output_file):
             shutil.copy(output_file, public_file)
+        
+        # Apply lip sync if enabled
+        if self.lipsync_var.get() and tts_audio and os.path.exists(tts_audio):
+            self.status_label.config(text="Applying lip sync...", foreground="blue")
+            self.root.update()
+            self.apply_lipsync(output_file)
         
         self.root.after(0, self.export_done, output_file, public_file if os.path.exists(output_file) else None)
     
@@ -480,6 +501,57 @@ class TikTokEditor:
         draw.text((x, y), text, fill=text_rgb, font=font)
         
         img.save(output_path, 'PNG')
+    
+    def apply_lipsync(self, video_path):
+        """Apply Wav2Lip lip sync to video"""
+        try:
+            from lipsync import LipSync
+            
+            weights_dir = os.path.join(BASE_DIR, "lipsync_weights")
+            model_path = os.path.join(weights_dir, "wav2lip.pth")
+            
+            if not os.path.exists(model_path):
+                messagebox.showwarning("Lip Sync", 
+                    "Model not found!\n\nDownload wav2lip.pth from:\n"
+                    "https://drive.google.com/file/d/1qKU8HG8dR4nW4LvCqpEYmSy6LLpVkZ21/view\n"
+                    "Place in: ~/lipsync_weights/")
+                return False
+            
+            # Get TTS audio path
+            base_name = os.path.splitext(os.path.basename(video_path))[0].replace("_tiktok", "")
+            tts_audio = os.path.join(OUTPUT_DIR, f"{base_name}_tts.mp3")
+            
+            if not os.path.exists(tts_audio):
+                return False
+            
+            output_lip = video_path.replace(".webm", "_lipsync.webm")
+            
+            lip = LipSync(
+                model='wav2lip',
+                checkpoint_path=model_path,
+                nosmooth=True,
+                device='cpu',
+                cache_dir=os.path.join(weights_dir, "cache"),
+                img_size=96,
+                save_cache=True,
+            )
+            
+            lip.sync(video_path, tts_audio, output_lip)
+            
+            if os.path.exists(output_lip):
+                shutil.move(output_lip, video_path)
+                # Update public file
+                public_file = os.path.join(STATIC_DIR, os.path.basename(video_path))
+                shutil.copy(video_path, public_file)
+            
+            return True
+            
+        except ImportError:
+            messagebox.showwarning("Lip Sync", "lipsync not installed.\n\nRun: pip install lipsync")
+        except Exception as e:
+            messagebox.showerror("Lip Sync Error", str(e))
+        
+        return False
     
     def export_done(self, output_file, public_file):
         self.export_btn.config(state=tk.NORMAL)
