@@ -133,9 +133,9 @@ class TikTokEditor:
         right_frame = ttk.LabelFrame(paned, text="Text Overlay", padding=10)
         paned.add(right_frame, weight=1)
         
-        ttk.Label(right_frame, text="Text:").pack(anchor=tk.W, pady=(0, 3))
-        self.text_entry = tk.Entry(right_frame, width=32)
-        self.text_entry.insert(0, self.text_content)
+        ttk.Label(right_frame, text="Text (up to 4 lines):").pack(anchor=tk.W, pady=(0, 3))
+        self.text_entry = tk.Text(right_frame, height=4, width=32, wrap=tk.WORD)
+        self.text_entry.insert("1.0", self.text_content)
         self.text_entry.pack(fill=tk.X, pady=(0, 8))
         self.text_entry.bind('KeyRelease', self.update_preview)
         
@@ -247,7 +247,8 @@ class TikTokEditor:
         img = Image.open(frame_path)
         draw = ImageDraw.Draw(img)
         
-        text = self.text_entry.get() or "Your text"
+        text = self.text_entry.get("1.0", tk.END).strip() or "Your text"
+        lines = text.split('\n')[:4]  # Max 4 lines
         font_size = max(16, int(img.height * 0.08 * (self.size_var.get() / 48)))
         stretch = self.stretch_var.get()
         
@@ -256,40 +257,53 @@ class TikTokEditor:
         except:
             font = ImageFont.load_default()
         
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        # Measure lines
+        line_heights = []
+        max_line_width = 0
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            line_heights.append((tw, th))
+            max_line_width = max(max_line_width, tw)
         
-        # Apply stretch
-        tw_stretched = int(tw * stretch)
+        total_height = sum(h for _, h in line_heights) + len(lines) * 10
+        line_width_stretched = int(max_line_width * stretch)
         
-        x = (img.width - tw_stretched) // 2
-        y = int(img.height * (self.pos_var.get() / 100)) - th // 2
+        # Calculate position - center all lines
+        start_y = int(img.height * (self.pos_var.get() / 100)) - total_height // 2
         
-        # Background (stretched)
-        pad = 15
-        bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
-        
-        alpha = int(255 * self.alpha_var.get())
-        bg_rgb = self.hex_to_rgb(self.bg_color)
-        
-        if self.bg_shape_var.get() == "round":
-            draw.rounded_rectangle(bg_box, radius=12, fill=(*bg_rgb, alpha))
-        else:
-            draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
-        
-        # Text (stretched)
-        text_rgb = self.hex_to_rgb(self.text_color)
-        
-        # Draw to temp and resize for stretch
-        temp_img = Image.new('RGBA', (tw + 30, th + 20), (0, 0, 0, 0))
-        temp_draw = ImageDraw.Draw(temp_img)
-        temp_draw.text((15, 5), text, fill=text_rgb, font=font)
-        
-        if stretch != 1.0:
-            new_w = int(temp_img.width * stretch)
-            temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
-        
-        img.paste(temp_img, (x - 15 + (tw_stretched - temp_img.width)//2, y - 5), temp_img)
+        # Draw each line
+        for i, (line, (tw, th)) in enumerate(line_heights):
+            tw_stretched = int(tw * stretch)
+            x = (img.width - tw_stretched) // 2
+            y = start_y + i * (th + 10)
+            
+            # Background
+            pad = 15
+            bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
+            
+            alpha = int(255 * self.alpha_var.get())
+            bg_rgb = self.hex_to_rgb(self.bg_color)
+            
+            if self.bg_shape_var.get() == "round":
+                draw.rounded_rectangle(bg_box, radius=12, fill=(*bg_rgb, alpha))
+            else:
+                draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
+            
+            # Text
+            text_rgb = self.hex_to_rgb(self.text_color)
+            
+            # Draw to temp and resize for stretch
+            temp_img = Image.new('RGBA', (tw + 30, th + 20), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((15, 5), line, fill=text_rgb, font=font)
+            
+            if stretch != 1.0:
+                new_w = int(temp_img.width * stretch)
+                temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
+            
+            img.paste(temp_img, (x - 15 + (tw_stretched - temp_img.width)//2, y - 5), temp_img)
         
         self.preview_photo = ImageTk.PhotoImage(img)
         self.preview_label.config(image=self.preview_photo, text="")
@@ -377,7 +391,7 @@ class TikTokEditor:
         base_name = os.path.splitext(os.path.basename(self.current_video))[0]
         output_file = os.path.join(OUTPUT_DIR, f"{base_name}_tiktok.webm")
         
-        text = self.text_entry.get() or ""
+        text = self.text_entry.get("1.0", tk.END).strip()
         
         # Create text overlay image for ffmpeg
         text_overlay_file = None
@@ -476,7 +490,8 @@ class TikTokEditor:
         except:
             font = ImageFont.load_default()
         
-        text = self.text_entry.get() or ""
+        text = self.text_entry.get("1.0", tk.END).strip()
+        lines = text.split('\n')[:4]  # Max 4 lines
         
         # Get stretch factor
         stretch = self.stretch_var.get()
@@ -485,45 +500,53 @@ class TikTokEditor:
         img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         
-        # Measure original text
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        # Measure all lines
+        line_dims = []
+        max_line_width = 0
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            line_dims.append((tw, th))
+            max_line_width = max(max_line_width, tw)
         
-        # Apply horizontal stretch to text
-        tw_stretched = int(tw * stretch)
+        total_height = sum(th for tw, th in line_dims) + len(lines) * 15
+        line_width_stretched = int(max_line_width * stretch)
         
-        x = (width - tw_stretched) // 2
-        y = int(height * (self.pos_var.get() / 100)) - th // 2
+        # Calculate start Y position
+        start_y = int(height * (self.pos_var.get() / 100)) - total_height // 2
         
-        # Background (stretched too)
-        pad = 20
-        bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
-        
-        bg_rgb = self.hex_to_rgb(self.bg_color)
-        alpha = int(255 * self.alpha_var.get())
-        
-        if self.bg_shape_var.get() == "round":
-            draw.rounded_rectangle(bg_box, radius=15, fill=(*bg_rgb, alpha))
-        else:
-            draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
-        
-        # Text (stretched)
-        text_rgb = self.hex_to_rgb(self.text_color)
-        
-        # Use affine transform for horizontal stretch
-        from PIL import ImageOps
-        # Draw text to temp image then stretch
-        temp_img = Image.new('RGBA', (tw + 40, th + 40), (0, 0, 0, 0))
-        temp_draw = ImageDraw.Draw(temp_img)
-        temp_draw.text((20, 10), text, fill=text_rgb, font=font)
-        
-        # Stretch horizontally
-        if stretch != 1.0:
-            new_w = int(temp_img.width * stretch)
-            temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
-        
-        # Composite onto main image
-        img.paste(temp_img, (x - 20 + (tw_stretched - temp_img.width)//2, y - 10), temp_img)
+        # Draw each line
+        for i, (line, (tw, th)) in enumerate(line_dims):
+            tw_stretched = int(tw * stretch)
+            x = (width - tw_stretched) // 2
+            y = start_y + i * (th + 15)
+            
+            # Background
+            pad = 20
+            bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
+            
+            bg_rgb = self.hex_to_rgb(self.bg_color)
+            alpha = int(255 * self.alpha_var.get())
+            
+            if self.bg_shape_var.get() == "round":
+                draw.rounded_rectangle(bg_box, radius=15, fill=(*bg_rgb, alpha))
+            else:
+                draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
+            
+            # Text
+            text_rgb = self.hex_to_rgb(self.text_color)
+            
+            # Draw to temp and resize for stretch
+            temp_img = Image.new('RGBA', (tw + 40, th + 40), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((20, 10), line, fill=text_rgb, font=font)
+            
+            if stretch != 1.0:
+                new_w = int(temp_img.width * stretch)
+                temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
+            
+            img.paste(temp_img, (x - 20 + (tw_stretched - temp_img.width)//2, y - 10), temp_img)
         
         img.save(output_path, 'PNG')
     
