@@ -178,6 +178,14 @@ class TikTokEditor:
         ttk.Scale(stretch_frame, from_=0.5, to=2.0, orient=tk.HORIZONTAL, variable=self.stretch_var, command=lambda _: self.update_preview()).pack(side=tk.LEFT, fill=tk.X, expand=True)
         ttk.Label(stretch_frame, text="1.0x", width=6).pack(side=tk.LEFT, padx=(5, 0))
         
+        # Line spacing
+        ttk.Label(right_frame, text="Line Spacing:").pack(anchor=tk.W, pady=(8, 3))
+        self.line_spacing_var = tk.DoubleVar(value=1.0)
+        spacing_frame = ttk.Frame(right_frame)
+        spacing_frame.pack(fill=tk.X, pady=(0, 8))
+        ttk.Scale(spacing_frame, from_=0.5, to=2.0, orient=tk.HORIZONTAL, variable=self.line_spacing_var, command=lambda _: self.update_preview()).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Label(spacing_frame, text="1.0x", width=6).pack(side=tk.LEFT, padx=(5, 0))
+        
         # Buttons
         self.export_btn = ttk.Button(right_frame, text="🎬 Export Video", command=self.export_video)
         self.export_btn.pack(fill=tk.X, pady=(0, 3))
@@ -251,6 +259,7 @@ class TikTokEditor:
         lines = text.split('\n')[:4]  # Max 4 lines
         font_size = max(16, int(img.height * 0.08 * (self.size_var.get() / 48)))
         stretch = self.stretch_var.get()
+        line_spacing = self.line_spacing_var.get()
         
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
@@ -274,10 +283,10 @@ class TikTokEditor:
         start_y = int(img.height * (self.pos_var.get() / 100)) - total_height // 2
         
         # Draw each line
-        for i, (line, (tw, th)) in enumerate(line_heights):
+        for i, (line, (tw, th)) in enumerate(zip(lines, line_heights)):
             tw_stretched = int(tw * stretch)
             x = (img.width - tw_stretched) // 2
-            y = start_y + i * (th + 10)
+            y = start_y + int(i * (th + 10 * line_spacing))
             
             # Background
             pad = 15
@@ -510,7 +519,10 @@ class TikTokEditor:
             line_dims.append((tw, th))
             max_line_width = max(max_line_width, tw)
         
-        total_height = sum(th for tw, th in line_dims) + len(lines) * 15
+        # Get line spacing
+        line_spacing = self.line_spacing_var.get()
+        
+        total_height = sum(th for tw, th in line_dims) + int(len(lines) * 15 * line_spacing)
         line_width_stretched = int(max_line_width * stretch)
         
         # Calculate start Y position
@@ -520,7 +532,7 @@ class TikTokEditor:
         for i, (line, (tw, th)) in enumerate(line_dims):
             tw_stretched = int(tw * stretch)
             x = (width - tw_stretched) // 2
-            y = start_y + i * (th + 15)
+            y = start_y + int(i * (th + 15 * line_spacing))
             
             # Background
             pad = 20
