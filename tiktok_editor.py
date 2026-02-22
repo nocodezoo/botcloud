@@ -168,7 +168,15 @@ class TikTokEditor:
         
         ttk.Label(right_frame, text="Vertical Position:").pack(anchor=tk.W, pady=(0, 3))
         self.pos_var = tk.IntVar(value=50)
-        ttk.Scale(right_frame, from_=0, to=100, orient=tk.HORIZONTAL, variable=self.pos_var, command=lambda _: self.update_preview()).pack(fill=tk.X, pady=(0, 10))
+        ttk.Scale(right_frame, from_=0, to=100, orient=tk.HORIZONTAL, variable=self.pos_var, command=lambda _: self.update_preview()).pack(fill=tk.X, pady=(0, 8))
+        
+        # Horizontal stretch/squeeze
+        ttk.Label(right_frame, text="Text Width (squeeze/stretch):").pack(anchor=tk.W, pady=(0, 3))
+        self.stretch_var = tk.DoubleVar(value=1.0)
+        stretch_frame = ttk.Frame(right_frame)
+        stretch_frame.pack(fill=tk.X, pady=(0, 8))
+        ttk.Scale(stretch_frame, from_=0.5, to=2.0, orient=tk.HORIZONTAL, variable=self.stretch_var, command=lambda _: self.update_preview()).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Label(stretch_frame, text="1.0x", width=6).pack(side=tk.LEFT, padx=(5, 0))
         
         # Buttons
         self.export_btn = ttk.Button(right_frame, text="🎬 Export Video", command=self.export_video)
@@ -456,19 +464,26 @@ class TikTokEditor:
         
         text = self.text_entry.get() or ""
         
+        # Get stretch factor
+        stretch = self.stretch_var.get()
+        
         # Create image large enough for text
         img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         
+        # Measure original text
         bbox = draw.textbbox((0, 0), text, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         
-        x = (width - tw) // 2
+        # Apply horizontal stretch to text
+        tw_stretched = int(tw * stretch)
+        
+        x = (width - tw_stretched) // 2
         y = int(height * (self.pos_var.get() / 100)) - th // 2
         
-        # Background
+        # Background (stretched too)
         pad = 20
-        bg_box = [x - pad, y - pad, x + tw + pad, y + th + pad]
+        bg_box = [x - pad, y - pad, x + tw_stretched + pad, y + th + pad]
         
         bg_rgb = self.hex_to_rgb(self.bg_color)
         alpha = int(255 * self.alpha_var.get())
@@ -478,9 +493,23 @@ class TikTokEditor:
         else:
             draw.rectangle(bg_box, fill=(*bg_rgb, alpha))
         
-        # Text
+        # Text (stretched)
         text_rgb = self.hex_to_rgb(self.text_color)
-        draw.text((x, y), text, fill=text_rgb, font=font)
+        
+        # Use affine transform for horizontal stretch
+        from PIL import ImageOps
+        # Draw text to temp image then stretch
+        temp_img = Image.new('RGBA', (tw + 40, th + 40), (0, 0, 0, 0))
+        temp_draw = ImageDraw.Draw(temp_img)
+        temp_draw.text((20, 10), text, fill=text_rgb, font=font)
+        
+        # Stretch horizontally
+        if stretch != 1.0:
+            new_w = int(temp_img.width * stretch)
+            temp_img = temp_img.resize((new_w, temp_img.height), Image.LANCZOS)
+        
+        # Composite onto main image
+        img.paste(temp_img, (x - 20 + (tw_stretched - temp_img.width)//2, y - 10), temp_img)
         
         img.save(output_path, 'PNG')
     
