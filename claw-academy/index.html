@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claw Academy | AI-Powered K-5 Education</title>
+    <meta name="description" content="Personalized AI teachers for kindergarten through 5th grade. Meet the future of homeschool education.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #FF6B35;
+            --secondary: #004E89;
+            --accent: #7FB069;
+            --light: #F7F7F7;
+            --dark: #1A1A2E;
+            --gold: #FFD700;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--light);
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, var(--secondary) 0%, #001f3f 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '🦞';
+            font-size: 200px;
+            position: absolute;
+            top: -20px;
+            right: -30px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .hero .tagline {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        
+        .lobster {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
+        }
+        
+        .section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .problem {
+            background: white;
+        }
+        
+        .problem h2, .solution h2, .teachers h2, .market h2, .vision h2 {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--secondary);
+        }
+        
+        .problem-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        
+        .card {
+            background: var(--light);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            color: var(--secondary);
+        }
+        
+        .solution {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .solution h2 {
+            color: white;
+        }
+        
+        .solution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            align-items: center;
+        }
+        
+        .solution-content h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--gold);
+        }
+        
+        .solution-content ul {
+            list-style: none;
+        }
+        
+        .solution-content li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .solution-content li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .teachers {
+            background: white;
+        }
+        
+        .teacher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+        
+        .teacher-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .teacher-card:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+        
+        .teacher-avatar {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .teacher-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 5px;
+        }
+        
+        .teacher-grade {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .teacher-specialty {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .grade-badge {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        
+        .market {
+            background: linear-gradient(135deg, var(--accent) 0%, #5a8f4a 100%);
+            color: white;
+        }
+        
+        .market h2 {
+            color: white;
+        }
+        
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+        
+        .stat {
+            padding: 20px;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .vision {
+            background: var(--dark);
+            color: white;
+            text-align: center;
+        }
+        
+        .vision h2 {
+            color: var(--primary);
+        }
+        
+        .vision p {
+            max-width: 700px;
+            margin: 0 auto 40px;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .roadmap {
+            background: white;
+        }
+        
+        .roadmap-timeline {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .roadmap-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 2px;
+        }
+        
+        .roadmap-item {
+            display: flex;
+            justify-content: flex-end;
+            padding-right: calc(50% + 30px);
+            position: relative;
+            margin-bottom: 40px;
+        }
+        
+        .roadmap-item:nth-child(even) {
+            justify-content: flex-start;
+            padding-right: 0;
+            padding-left: calc(50% + 30px);
+        }
+        
+        .roadmap-item::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 4px solid white;
+        }
+        
+        .roadmap-content {
+            background: var(--light);
+            padding: 20px 30px;
+            border-radius: 15px;
+            max-width: 400px;
+        }
+        
+        .roadmap-content h3 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+        
+        .roadmap-content .phase {
+            background: var(--primary);
+            color: white;
+            padding: 3px 12px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .contact {
+            background: var(--secondary);
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .contact h2 {
+            margin-bottom: 20px;
+        }
+        
+        .contact-email {
+            font-size: 1.5rem;
+            color: var(--gold);
+            margin-bottom: 30px;
+        }
+        
+        footer {
+            background: var(--dark);
+            color: #888;
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.9rem;
+        }
+        
+        footer .lobster {
+            font-size: 30px;
+            animation: none;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero .tagline { font-size: 1.2rem; }
+            .roadmap-timeline::before { left: 20px; }
+            .roadmap-item, .roadmap-item:nth-child(even) {
+                padding-left: 60px;
+                padding-right: 0;
+                justify-content: flex-start;
+            }
+            .roadmap-item::before, .roadmap-item:nth-child(even)::before {
+                left: 20px;
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="lobster">🦞</div>
+        <h1>Claw Academy</h1>
+        <p class="tagline">Personalized AI Teachers for Every Grade. The Future of Homeschool Education is Here.</p>
+        <a href="#contact" class="cta-button">Request Early Access</a>
+    </section>
+
+    <section class="section problem">
+        <h2>😩 The Problem</h2>
+        <div class="problem-cards">
+            <div class="card">
+                <div class="card-icon">👩‍🏫</div>
+                <h3>Teacher Shortage</h3>
+                <p>Homeschool parents struggle to teach every subject at every grade level effectively.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">💰</div>
+                <h3>Expensive Tutors</h3>
+                <p>Private tutoring costs $50-150/hour. Quality education is becoming a luxury.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📚</div>
+                <h3>One-Size-Fits-All</h3>
+                <p>Traditional tutoring doesn't adapt to each child's unique learning pace and style.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">⏰</div>
+                <h3>Parent Burnout</h3>
+                <p>Homeschool parents are overwhelmed trying to be expert teachers in every subject.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section solution">
+        <h2>💡 The Claw Academy Solution</h2>
+        <div class="solution-grid">
+            <div class="solution-content">
+                <h3>Specialized AI Teachers</h3>
+                <ul>
+                    <li><strong>K-5 Coverage:</strong> 6 dedicated teacher personas, each expert in their grade level</li>
+                    <li><strong>Age-Appropriate:</strong> Every teacher speaks, teaches, and engages at the perfect developmental level</li>
+                    <li><strong>Always Available:</strong> 24/7 access to qualified "teachers" — no scheduling, no waiting</li>
+                    <li><strong>Infinitely Patient:</strong> Never gets frustrated, never repeats the same lesson the same way twice</li>
+                    <li><strong>Personalized:</strong> Adapts to each child's questions, pace, and interests</li>
+                    <li><strong>Safe & Supervised:</strong> Parents control the experience, always know what's being taught</li>
+                </ul>
+            </div>
+            <div style="text-align: center; font-size: 150px;">🏫</div>
+        </div>
+    </section>
+
+    <section class="section teachers">
+        <h2>👩‍🏫 Meet Our Teachers</h2>
+        <div class="teacher-grid">
+            <div class="teacher-card">
+                <span class="grade-badge">Kindergarten</span>
+                <div class="teacher-avatar">🌈</div>
+                <div class="teacher-name">Ms. Lily</div>
+                <div class="teacher-specialty">ABCs, Colors, Songs, Shapes</div>
+            </div>
+            <div class="teacher-card">
+                <span class="grade-badge">1st Grade</span>
+                <div class="teacher-avatar">📚</div>
+                <div class="teacher-name">Mr. Ben</div>
+                <div class="teacher-specialty">Reading, Writing, Addition/Subtraction</div>
+            </div>
+            <div class="teacher-card">
+                <span class="grade-badge">2nd Grade</span>
+                <div class="teacher-avatar">📖</div>
+                <div class="teacher-name">Mrs. Rosa</div>
+                <div class="teacher-specialty">Reading Comprehension, Time, Money</div>
+            </div>
+            <div class="teacher-card">
+                <span class="grade-badge">3rd Grade</span>
+                <div class="teacher-avatar">🔬</div>
+                <div class="teacher-name">Mr. Omar</div>
+                <div class="teacher-specialty">Multiplication, Science Experiments</div>
+            </div>
+            <div class="teacher-card">
+                <span class="grade-badge">4th Grade</span>
+                <div class="teacher-avatar">🔍</div>
+                <div class="teacher-name">Ms. Priya</div>
+                <div class="teacher-specialty">Fractions, Decimals, Research Projects</div>
+            </div>
+            <div class="teacher-card">
+                <span class="grade-badge">5th Grade</span>
+                <div class="teacher-avatar">🎯</div>
+                <div class="teacher-name">Mr. Derek</div>
+                <div class="teacher-specialty">Pre-Algebra, Essays, Science Fairs</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section market">
+        <h2>📈 The Market Opportunity</h2>
+        <div class="market-stats">
+            <div class="stat">
+                <div class="stat-number">$6.8B</div>
+                <div class="stat-label">Homeschool Market Size (US)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">3.7M</div>
+                <div class="stat-label">Homeschooled Students (US)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">+10%</div>
+                <div class="stat-label">Annual Growth Rate</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">89%</div>
+                <div class="stat-label">Parents Seek Better Resources</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section vision">
+        <h2>🚀 Our Vision</h2>
+        <p>Claw Academy envisions a world where every child — regardless of location or family resources — has access to personalized, patient, expert-level education. We believe AI can augment human parents, not replace them, creating a hybrid learning environment where children thrive.</p>
+        <p>We're not just building an app. We're building the future of education — one where every student has their own dedicated AI teacher who knows them, adapts to them, and never gives up on them.</p>
+        <a href="#contact" class="cta-button">Join the Revolution</a>
+    </section>
+
+    <section class="section roadmap">
+        <h2>🗺️ Roadmap</h2>
+        <div class="roadmap-timeline">
+            <div class="roadmap-item">
+                <div class="roadmap-content">
+                    <span class="phase">PHASE 1 - NOW</span>
+                    <h3>K-5 Launch</h3>
+                    <p>6 specialized teacher agents ready for beta homeschool families. Perfect the teaching prompts and user experience.</p>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-content">
+                    <span class="phase">PHASE 2 - Q2 2026</span>
+                    <h3>6th-8th Grade</h3>
+                    <p>Middle school teachers covering algebra, geometry, earth science, and more. Parent dashboard with progress tracking.</p>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-content">
+                    <span class="phase">PHASE 3 - Q4 2026</span>
+                    <h3>Multi-Language</h3>
+                    <p>Spanish, French, Mandarin teachers. Localization opens massive international markets.</p>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-content">
+                    <span class="phase">PHASE 4 - 2027</span>
+                    <h3>Adaptive Learning</h3>
+                    <p>AI that learns each student's strengths/weaknesses. Personalized curriculum paths. Parent API for integrations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact" id="contact">
+        <h2>Ready to Transform Education?</h2>
+        <p style="margin-bottom: 20px; opacity: 0.9;">Join our early access program and be among the first to experience Claw Academy.</p>
+        <div class="contact-email">hello@clawacademy.ai</div>
+        <a href="https://github.com/nocodezoo/RTOpenC" class="cta-button">View on GitHub</a>
+    </section>
+
+    <footer>
+        <div class="lobster">🦞</div>
+        <p>© 2026 Claw Academy. Built with OpenClaw.</p>
+        <p>Open Source + AI = Education for Everyone.</p>
+    </footer>
+</body>
+</html>
