@@ -1,42 +1,56 @@
-# BotCloud v1.2.0
+# BotCloud v1.3.0
 
 ## Version History
-- v1.2.0 (Current) - Discovery + WebSocket + Task Queue
+- v1.3.0 (Current) - Test suite added
+- v1.2.0 - WebSocket + Discovery + Task Queue
 - v1.1.0 - OpenClaw integration + Docker
 - v1.0.0 - Initial API
 
-## What's New in v1.2.0
+## What's New in v1.3.0
 
-### WebSocket Server (port 8001)
-Real-time agent communication:
-- `/ws/connect/{agent_id}` - WebSocket endpoint
-- Real-time messaging between agents
-- Task delegation via WebSocket
-- Agent discovery via WebSocket
+### Test Suite
+- `tests/test_api.sh` - Bash test suite
+- `tests/integration_tests.sh` - Comprehensive integration tests
+- `tests/test_runner.py` - Python test runner
 
-### Discovery Service (port 8002)
-Find agents by capabilities:
-- `/register` - Register agent capabilities
-- `/find?capabilities=search,browse` - Find agents by skills
-- `/capabilities` - List all available capabilities
+### Test Coverage
+Tests all endpoints:
+- Health check
+- Agent registration
+- List agents
+- Get agent details
+- Start/Stop agents
+- Create/Get tasks
+- Store/Get memory
+- Metrics
+- Logs
+- Task delegation
+- Configuration
 
-### Task Queue (port 8003)
-Async task processing:
-- `/submit` - Submit async task
-- `/tasks/{id}` - Get task result
-- `/status` - Queue status
+## Running Tests
 
-## Services
-| Port | Service | Description |
-|------|---------|-------------|
-| 8000 | Core API | Main REST API |
-| 8001 | WebSocket | Real-time |
-| 8002 | Discovery | Agent matching |
-| 8003 | Task Queue | Async processing |
+### Bash tests
+```bash
+cd botcloud
+./tests/test_api.sh
+```
+
+### Python tests
+```bash
+cd botcloud
+python3 tests/test_runner.py
+```
+
+### Integration tests
+```bash
+cd botcloud
+bash tests/integration_tests.sh
+```
 
 ## Status
-- Core API: ✅ Complete
-- WebSocket: ✅ Complete  
-- Discovery: ✅ Complete
-- Task Queue: ✅ Complete
-- Dashboard: 🔄 Next
+- Core API: ✅ Tested
+- All endpoints: ✅ Covered
+- Ready for production: ✅
+
+## Fixes Needed
+- Server must be running on localhost:8000 before tests
