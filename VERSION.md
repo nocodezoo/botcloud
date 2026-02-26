@@ -1,56 +1,46 @@
-# BotCloud v1.3.0
+# BotCloud v1.4.0
 
 ## Version History
-- v1.3.0 (Current) - Test suite added
+- v1.4.0 (Current) - Apache2 deployment
+- v1.3.0 - Test suite
 - v1.2.0 - WebSocket + Discovery + Task Queue
 - v1.1.0 - OpenClaw integration + Docker
 - v1.0.0 - Initial API
 
-## What's New in v1.3.0
+## What's New in v1.4.0
 
-### Test Suite
-- `tests/test_api.sh` - Bash test suite
-- `tests/integration_tests.sh` - Comprehensive integration tests
-- `tests/test_runner.py` - Python test runner
+### Apache2 Deployment
+- `deployment/botcloud.conf` - Apache VirtualHost config
+- `deployment/botcloud.service` - SystemD service
+- `deployment/deploy.sh` - One-command deployment script
 
-### Test Coverage
-Tests all endpoints:
-- Health check
-- Agent registration
-- List agents
-- Get agent details
-- Start/Stop agents
-- Create/Get tasks
-- Store/Get memory
-- Metrics
-- Logs
-- Task delegation
-- Configuration
+### Features
+- HTTP proxy to port 8000
+- WebSocket proxy to port 8001
+- SystemD service for auto-start
+- Apache2 integration
 
-## Running Tests
+## Deployment
 
-### Bash tests
+### Quick Deploy
 ```bash
 cd botcloud
-./tests/test_api.sh
+sudo bash deployment/deploy.sh
 ```
 
-### Python tests
-```bash
-cd botcloud
-python3 tests/test_runner.py
-```
+### Manual
+1. Install dependencies
+2. Enable Apache modules
+3. Copy config to sites-available
+4. Start service
 
-### Integration tests
-```bash
-cd botcloud
-bash tests/integration_tests.sh
-```
+### Endpoints After Deploy
+- API: http://localhost:8000
+- WebSocket: ws://localhost:8001
+- Discovery: http://localhost:8002
+- Task Queue: http://localhost:8003
 
-## Status
-- Core API: ✅ Tested
-- All endpoints: ✅ Covered
-- Ready for production: ✅
-
-## Fixes Needed
-- Server must be running on localhost:8000 before tests
+## Requirements
+- Python 3.8+
+- Apache2
+- systemd
