@@ -175,7 +175,7 @@ store.agents[demo_agent.id] = demo_agent
 
 app = FastAPI(title="BotCloud API", version="1.0.0")
 
-def verify_api_key(x_api_key: str = Header(None)) -> str:
+def verify_api_key(x_api_key: str = Header(None, alias="X-API-Key")) -> str:
     if not x_api_key:
         raise HTTPException(status_code=401, detail="API key required")
     if x_api_key not in store.api_keys:
@@ -211,13 +211,29 @@ def register_agent(
     api_key: str = Body(default=None)
 ):
     """Register a new agent"""
-    agent = store.create_agent(name, capabilities, api_key)
+    agent_id = f"agent_{uuid.uuid4().hex[:8]}"
+    if not api_key:
+        api_key = f"bc_{uuid.uuid4().hex}"
+    
+    agent = Agent(
+        id=agent_id,
+        name=name,
+        capabilities=capabilities,
+        status=AgentStatus.STOPPED,
+        created_at=datetime.utcnow(),
+        last_active=datetime.utcnow()
+    )
+    
+    store.agents[agent_id] = agent
+    store.api_keys[api_key] = agent_id
+    store.memories[agent_id] = []
+    
     return {
         "id": agent.id,
         "name": agent.name,
         "capabilities": agent.capabilities,
         "status": agent.status,
-        "api_key": list(store.api_keys.keys())[list(store.api_keys.values()).index(agent.id)],
+        "api_key": api_key,
         "created_at": agent.created_at.isoformat()
     }
 
@@ -252,21 +268,21 @@ def get_agent(agent_id: str):
     }
 
 @app.post("/agents/{agent_id}/start")
-def start_agent(agent_id: str, api_key: str = Header(None)):
+def start_agent(agent_id: str, api_key: str = Header(None, alias="X-API-Key")):
     """Start an agent"""
     verify_api_key(api_key)
     agent = store.start_agent(agent_id)
     return {"status": "success", "agent_id": agent_id, "state": agent.status}
 
 @app.post("/agents/{agent_id}/stop")
-def stop_agent(agent_id: str, api_key: str = Header(None)):
+def stop_agent(agent_id: str, api_key: str = Header(None, alias="X-API-Key")):
     """Stop an agent"""
     verify_api_key(api_key)
     agent = store.stop_agent(agent_id)
     return {"status": "success", "agent_id": agent_id, "state": agent.status}
 
 @app.post("/agents/{agent_id}/configure")
-def configure_agent(agent_id: str, config: Dict = Body(...), api_key: str = Header(None)):
+def configure_agent(agent_id: str, config: Dict = Body(...), api_key: str = Header(None, alias="X-API-Key")):
     """Update agent configuration"""
     verify_api_key(api_key)
     agent = store.get_agent(agent_id)
@@ -276,7 +292,7 @@ def configure_agent(agent_id: str, config: Dict = Body(...), api_key: str = Head
 # ============= Tasks =============
 
 @app.post("/agents/{agent_id}/tasks")
-def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key: str = Header(None)):
+def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key: str = Header(None, alias="X-API-Key")):
     """Send a task to an agent"""
     verify_api_key(api_key)
     task = store.create_task(agent_id, input_data)
@@ -335,7 +351,7 @@ def delegate_task(
     agent_id: str,
     to_agent: str = Body(..., alias="to_agent"),
     task: str = Body(...),
-    api_key: str = Header(None)
+    api_key: str = Header(None, alias="X-API-Key")
 ):
     """Delegate a task to another agent"""
     verify_api_key(api_key)
@@ -362,7 +378,7 @@ def send_message(
     agent_id: str,
     to_agent: str = Body(..., alias="to_agent"),
     content: str = Body(...),
-    api_key: str = Header(None)
+    api_key: str = Header(None, alias="X-API-Key")
 ):
     """Send a message to another agent"""
     verify_api_key(api_key)
@@ -400,7 +416,7 @@ def store_memory(
     agent_id: str,
     key: str = Body(...),
     value: str = Body(...),
-    api_key: str = Header(None)
+    api_key: str = Header(None, alias="X-API-Key")
 ):
     """Store a memory for an agent"""
     verify_api_key(api_key)
@@ -428,7 +444,7 @@ def get_memories(agent_id: str):
     }
 
 @app.delete("/memory/{agent_id}/{key}")
-def delete_memory(agent_id: str, key: str, api_key: str = Header(None)):
+def delete_memory(agent_id: str, key: str, api_key: str = Header(None, alias="X-API-Key")):
     """Delete a memory"""
     verify_api_key(api_key)
     store.get_agent(agent_id)
