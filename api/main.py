@@ -276,7 +276,7 @@ def configure_agent(agent_id: str, config: Dict = Body(...), api_key: str = Head
 # ============= Tasks =============
 
 @app.post("/agents/{agent_id}/tasks")
-def create_task(agent_id: str, input_data: str = Body(...), api_key: str = Header(None)):
+def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key: str = Header(None)):
     """Send a task to an agent"""
     verify_api_key(api_key)
     task = store.create_task(agent_id, input_data)
