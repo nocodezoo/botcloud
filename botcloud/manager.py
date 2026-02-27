@@ -347,3 +347,15 @@ def quick_test(workers: int = 3):
 
 if __name__ == "__main__":
     quick_test()
+
+
+# Global singleton for OpenClaw integration
+# Use: from botcloud.manager import botcloud_manager
+botcloud_manager = None
+
+def get_manager() -> BotCloudManager:
+    """Get or create the global BotCloud manager instance"""
+    global botcloud_manager
+    if botcloud_manager is None:
+        botcloud_manager = BotCloudManager()
+    return botcloud_manager

@@ -297,10 +297,8 @@ def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key:
     verify_api_key(api_key)
     task = store.create_task(agent_id, input_data)
     
-    # Simulate task completion (in real version, this would be async)
-    task.status = "completed"
-    task.output = f"Processed: {input_data}"
-    task.completed_at = datetime.utcnow()
+    # Task stays pending - worker must poll and complete it
+    # task.status = "completed"  # Removed - workers handle this
     
     return {
         "id": task.id,
@@ -324,6 +322,27 @@ def get_task(task_id: str):
         "status": task.status,
         "created_at": task.created_at.isoformat(),
         "completed_at": task.completed_at.isoformat() if task.completed_at else None
+    }
+
+@app.post("/tasks/{task_id}/complete")
+def complete_task(
+    task_id: str,
+    output: str = Body(default=None),
+    status: str = Body(default="completed"),
+    api_key: str = Header(None, alias="X-API-Key")
+):
+    """Mark a task as complete"""
+    verify_api_key(api_key)
+    task = store.get_task(task_id)
+    task.status = status
+    if output:
+        task.output = output
+    task.completed_at = datetime.utcnow()
+    return {
+        "id": task.id,
+        "status": task.status,
+        "output": task.output,
+        "completed_at": task.completed_at.isoformat()
     }
 
 @app.get("/agents/{agent_id}/tasks")
