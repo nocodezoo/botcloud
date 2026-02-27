@@ -1,15 +1,17 @@
 """
-BotCloud API - Core Server
+BotCloud API - Core Server with WebSocket Support
 """
 
 import os
 import uuid
 import json
+import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional
 from enum import Enum
 
-from fastapi import FastAPI, HTTPException, Header, Body
+from fastapi import FastAPI, HTTPException, Header, Body, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -503,6 +505,64 @@ def get_metrics(agent_id: str):
         "completed_tasks": completed,
         "uptime_seconds": (datetime.utcnow() - agent.created_at).total_seconds()
     }
+
+# ============= WebSocket for Real-time =============
+
+class WSConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+    
+    async def connect(self, websocket: WebSocket, client_id: str):
+        await websocket.accept()
+        self.active_connections[client_id] = websocket
+    
+    def disconnect(self, client_id: str):
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+    
+    async def send(self, client_id: str, message: dict):
+        if client_id in self.active_connections:
+            await self.active_connections[client_id].send_json(message)
+    
+    async def broadcast(self, message: dict):
+        for conn in self.active_connections.values():
+            await conn.send_json(message)
+
+ws_manager = WSConnectionManager()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time task updates"""
+    client_id = str(uuid.uuid4())[:8]
+    await ws_manager.connect(websocket, client_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            msg = json.loads(data)
+            
+            # Handle different message types
+            msg_type = msg.get("type")
+            
+            if msg_type == "subscribe":
+                # Subscribe to agent updates
+                agent_id = msg.get("agent_id")
+                await ws_manager.send(client_id, {"type": "subscribed", "agent_id": agent_id})
+            
+            elif msg_type == "task_result":
+                # Broadcast task result
+                await ws_manager.broadcast({
+                    "type": "task_result",
+                    "task_id": msg.get("task_id"),
+                    "output": msg.get("output"),
+                    "status": msg.get("status")
+                })
+    
+    except WebSocketDisconnect:
+        ws_manager.disconnect(client_id)
+
+@app.get("/ws/health")
+async def ws_health():
+    return {"status": "ws_healthy", "connections": len(ws_manager.active_connections)}
 
 # ============= Run =============
 
