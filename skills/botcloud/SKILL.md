@@ -1,75 +1,68 @@
 # BotCloud Skill
 
-Use this skill when the user wants to manage BotCloud workers or distribute tasks across multiple agents.
+Use this skill when the user wants to run commands via BotCloud workers.
 
-## Triggers
+## Trigger
 
-- "botcloud" / "bot cloud" / "BotCloud"
-- "start workers" / "spawn workers"
-- "worker pool"
-- "distributed agents"
-- "parallel tasks"
+- "botcloud" / "send to botcloud" / "botcloud do"
 
-## What BotCloud Does
+## How It Works
 
-BotCloud is a distributed task execution network that lets OpenClaw spawn multiple parallel worker agents. Each worker polls a queue and executes tasks independently.
+BotCloud runs distributed workers that can execute real commands on your machine.
 
-**Use cases:**
-- Parallel file processing (read/write many files)
-- Concurrent API calls
-- Batch operations
-- Scaling agent capacity beyond single-threaded limits
-
-## CLI Commands
-
-```bash
-# Check status
-python3 botcloud/cli.py status
-
-# Start workers
-python3 botcloud/cli.py start 5
-
-# Submit task to specific worker
-python3 botcloud/cli.py task "exec echo hi" --worker worker-0
-
-# Submit to any worker (parallel)
-python3 botcloud/cli.py any "exec echo hi"
-
-# Stop all
-python3 botcloud/cli.py stop
-
-# Detailed stats
-python3 botcloud/cli.py stats
-```
-
-## Python API
+## Usage
 
 ```python
-from botcloud.manager import BotCloudManager
+from botcloud.handler import send_command, send_command_any, status
 
-manager = BotCloudManager()
-manager.start_api()
-workers = manager.spawn_workers(5)
+# Check status
+print(status())  # BotCloud: healthy | Workers: 1/1
 
-# Specific worker
-result = manager.submit_task("worker-0", "read file.txt")
+# Send command to a worker (specific)
+result = send_command("exec ls -la")
+result = send_command("math 100 + 200")
+result = send_command("hardware status")
 
-# Any worker (parallel)
-result = manager.submit_task_any("exec echo hi")
+# Send to any available worker (parallel)
+result = send_command_any("exec echo parallel")
 
-# With OpenClaw delegation
-workers = manager.spawn_workers(5, openclaw_url="http://localhost:8080")
-
-manager.stop_all()
+# Stop BotCloud
+from botcloud.handler import stop
+stop()
 ```
 
-## Worker Commands
+## Commands Available to Workers
 
-- `read <filename>` - Read file
-- `write <filename> <content>` - Write file
-- `ls [dir]` - List files
-- `mkdir <dir>` - Create directory
-- `rm <file>` - Delete file
-- `exec <command>` - Run shell command
-- `delegate <task>` - Delegate to OpenClaw
-- `info` - Worker info
+| Category | Commands |
+|----------|----------|
+| **Shell** | `exec <cmd>`, `run <cmd>` |
+| **File** | `read <file>`, `write <file> <content>`, `ls`, `mkdir <dir>`, `rm <file>` |
+| **Memory** | `memory set <key> <val>`, `memory get <key>`, `memory list`, `memory del <key>` |
+| **Cron** | `cron add every 30s "task"`, `cron list`, `cron remove <job_id>` |
+| **Git** | `git status`, `git log`, `git commit -m "msg"`, etc. |
+| **HTTP** | `http GET <url>`, `http POST <url>`, etc. |
+| **Math** | `math 2+2*3` |
+| **Hardware** | `hardware status`, `hardware processes` |
+| **Browser** | `open <url>`, `screenshot` |
+| **Pushover** | `push <message>` (requires env vars) |
+| **Delegate** | `delegate <task>` → forwards to OpenClaw |
+
+## Starting BotCloud
+
+BotCloud will auto-start when you use it. Or start manually:
+
+```bash
+cd botcloud
+python3 api/main.py
+# API runs on port 8000
+```
+
+## How to Tell Me
+
+Just say:
+- "send to botcloud exec ls"
+- "botcloud do math 50*10"
+- "botcloud hardware status"
+- "botcloud write test.txt hello world"
+
+I'll run it and return the result.
