@@ -1,8 +1,14 @@
 """
 BotCloud API - Core Server with WebSocket Support
 """
-
 import os
+import sys
+
+# Add parent to path for imports
+_botcloud_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _botcloud_root not in sys.path:
+    sys.path.insert(0, _botcloud_root)
+
 import uuid
 import json
 import asyncio
@@ -54,7 +60,32 @@ class Memory(BaseModel):
     agent_id: str
     created_at: datetime = None
 
-# ============= In-Memory Store =============
+# ============= Database Layer =============
+# Use SQLite by default, set BOTCLOUD_DB=postgres for PostgreSQL
+
+import os
+DB_TYPE = os.environ.get("BOTCLOUD_DB", "sqlite")
+
+# Import database - use local path
+_db_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _db_path not in sys.path:
+    sys.path.insert(0, _db_path)
+
+if DB_TYPE == "postgres":
+    from database import PostgresDB as DB
+else:
+    from database import SQLiteDB as DB
+
+# Global database instance
+_db = None
+
+def get_db() -> DB:
+    global _db
+    if _db is None:
+        _db = DB()
+    return _db
+
+# ============= In-Memory Store (legacy, for compatibility) =============
 
 class BotStore:
     def __init__(self):
@@ -563,6 +594,93 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/ws/health")
 async def ws_health():
     return {"status": "ws_healthy", "connections": len(ws_manager.active_connections)}
+
+# ============= Database-Backed Endpoints (Optional) =============
+
+@app.post("/db/agents")
+def db_register_agent(
+    name: str = Body(...),
+    capabilities: List[str] = Body(default=[]),
+    api_key: str = Body(default=None)
+):
+    """Register agent in database"""
+    import uuid
+    if not api_key:
+        api_key = f"bc_{uuid.uuid4().hex}"
+    
+    db = get_db()
+    agent = db.create_agent(name, capabilities, api_key)
+    return agent
+
+@app.get("/db/agents")
+def db_list_agents():
+    """List all agents from database"""
+    db = get_db()
+    return {"agents": db.list_agents()}
+
+@app.get("/db/agents/{agent_id}")
+def db_get_agent(agent_id: str):
+    """Get agent from database"""
+    db = get_db()
+    agent = db.get_agent(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent
+
+@app.post("/db/agents/{agent_id}/tasks")
+def db_create_task(agent_id: str, input_data: str = Body(..., embed=True)):
+    """Create task in database"""
+    db = get_db()
+    task = db.create_task(agent_id, input_data)
+    return task
+
+@app.get("/db/tasks/{task_id}")
+def db_get_task(task_id: str):
+    """Get task from database"""
+    db = get_db()
+    task = db.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+@app.post("/db/tasks/{task_id}/complete")
+def db_complete_task(
+    task_id: str,
+    output: str = Body(default=None),
+    status: str = Body(default="completed")
+):
+    """Complete task in database"""
+    db = get_db()
+    db.complete_task(task_id, output or "", status)
+    return {"status": "completed", "task_id": task_id}
+
+@app.get("/db/agents/{agent_id}/tasks")
+def db_list_tasks(agent_id: str):
+    """List tasks for agent from database"""
+    db = get_db()
+    return {"tasks": db.list_tasks(agent_id)}
+
+@app.post("/db/memory/{agent_id}")
+def db_store_memory(
+    agent_id: str,
+    key: str = Body(...),
+    value: str = Body(...)
+):
+    """Store memory in database"""
+    db = get_db()
+    return db.store_memory(agent_id, key, value)
+
+@app.get("/db/memory/{agent_id}")
+def db_get_memories(agent_id: str):
+    """Get memories from database"""
+    db = get_db()
+    return {"memories": db.get_memories(agent_id)}
+
+@app.get("/db/memory/{agent_id}/search")
+def db_search_memories(agent_id: str, q: str = None):
+    """Search memories in database"""
+    db = get_db()
+    return {"memories": db.search_memories(agent_id, q or "")}
 
 # ============= Run =============
 
