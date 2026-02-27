@@ -178,18 +178,32 @@ class BotCloudManager:
         count: int,
         worker_type: str = "worker",
         capabilities: List[str] = None,
-        openclaw_url: str = None
+        openclaw_url: str = None,
+        lifecycle: str = "persistent",
+        idle_timeout: int = None
     ) -> List[BotCloudWorker]:
-        """Spawn multiple workers"""
+        """
+        Spawn multiple workers
+        
+        Args:
+            count: Number of workers to spawn
+            worker_type: Type of worker (default: worker)
+            capabilities: List of capabilities
+            openclaw_url: URL of OpenClaw for delegation
+            lifecycle: "persistent" (default), "pooled" (reuse), "ephemeral" (kill after task)
+            idle_timeout: Seconds before idle workers are killed (for pooled/ephemeral)
+        """
         workers = []
         
         for i in range(count):
             name = f"worker-{i}"
             worker = self.register_worker(name, capabilities, worker_type)
+            worker.lifecycle = lifecycle
+            worker.idle_timeout = idle_timeout
             self.start_worker(worker, openclaw_url)
             workers.append(worker)
         
-        print(f"✓ Spawned {count} workers")
+        print(f"✓ Spawned {count} workers (lifecycle={lifecycle})")
         return workers
     
     def submit_task(
@@ -313,6 +327,47 @@ class BotCloudManager:
             "running_workers": sum(1 for w in self.workers.values() if w.status == "running"),
             "workers": self.get_worker_status()
         }
+    
+    # ============ Ephemeral / Pooled Workers ============
+    
+    def run_ephemeral(self, task: str, timeout: int = 60) -> Dict[str, Any]:
+        """
+        Spawn a worker, run task, kill worker. 
+        Useful for one-off tasks.
+        """
+        # Create a unique worker
+        import uuid
+        name = f"ephemeral-{uuid.uuid4().hex[:6]}"
+        
+        worker = self.register_worker(name, ["general"], "ephemeral")
+        self.start_worker(worker)
+        
+        try:
+            # Run task
+            result = self.submit_task(name, task, wait_for_result=True, timeout=timeout)
+            return result
+        finally:
+            # Kill worker after task
+            self.stop_worker(name)
+    
+    def run_parallel(self, tasks: List[str], timeout: int = 60) -> List[Dict[str, Any]]:
+        """
+        Run multiple tasks in parallel with separate workers.
+        Spawns a worker per task, kills them after.
+        """
+        import concurrent.futures
+        
+        results = []
+        
+        def run_one(task):
+            return self.run_ephemeral(task, timeout)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks)) as executor:
+            futures = {executor.submit(run_one, task): task for task in tasks}
+            for future in concurrent.futures.as_completed(futures):
+                results.append(future.result())
+        
+        return results
     
     # ============ Shared Memory ============
     
