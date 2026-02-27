@@ -1,0 +1,14 @@
+[Unit]
+Description=BotCloud API Server
+After=network.target
+
+[Service]
+Type=simple
+User=openryanclaw
+WorkingDirectory=/home/openryanclaw/.openclaw/workspace/botcloud/api
+ExecStart=/usr/bin/python3 /home/openryanclaw/.openclaw/workspace/botcloud/api/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

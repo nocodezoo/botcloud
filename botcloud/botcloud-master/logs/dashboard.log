@@ -1,0 +1,12 @@
+127.0.0.1 - - [26/Feb/2026 17:47:40] "GET /dashboard.html HTTP/1.1" 304 -
+127.0.0.1 - - [26/Feb/2026 17:48:26] "GET /test.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Feb/2026 17:48:41] code 404, message File not found
+127.0.0.1 - - [26/Feb/2026 17:48:41] "GET /test.html** HTTP/1.1" 404 -
+127.0.0.1 - - [26/Feb/2026 17:48:46] "GET /test.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Feb/2026 17:50:34] "GET /dashboard.html HTTP/1.1" 304 -
+127.0.0.1 - - [26/Feb/2026 17:50:36] "GET /dashboard.html HTTP/1.1" 304 -
+127.0.0.1 - - [26/Feb/2026 17:50:45] "GET /dashboard.html HTTP/1.1" 304 -
+127.0.0.1 - - [26/Feb/2026 17:51:32] "GET /dashboard.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Feb/2026 17:51:57] code 404, message File not found
+127.0.0.1 - - [26/Feb/2026 17:51:57] "GET /dashboard.html** HTTP/1.1" 404 -
+127.0.0.1 - - [26/Feb/2026 17:53:06] "GET /dashboard.html HTTP/1.1" 200 -
