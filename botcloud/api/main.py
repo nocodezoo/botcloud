@@ -553,6 +553,7 @@ def get_metrics(agent_id: str):
 class WSConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
+        self.task_connections: Dict[str, set] = {}  # task_id -> set of websockets
     
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
@@ -569,6 +570,25 @@ class WSConnectionManager:
     async def broadcast(self, message: dict):
         for conn in self.active_connections.values():
             await conn.send_json(message)
+    
+    # Feature 3: Task streaming
+    async def stream_to_task(self, task_id: str, data: dict):
+        """Send data to all connections subscribed to a task"""
+        if task_id in self.task_connections:
+            for conn in self.task_connections[task_id]:
+                try:
+                    await conn.send_json(data)
+                except:
+                    pass
+    
+    def subscribe_task(self, websocket: WebSocket, task_id: str):
+        if task_id not in self.task_connections:
+            self.task_connections[task_id] = set()
+        self.task_connections[task_id].add(websocket)
+    
+    def unsubscribe_task(self, websocket: WebSocket, task_id: str):
+        if task_id in self.task_connections:
+            self.task_connections[task_id].discard(websocket)
 
 ws_manager = WSConnectionManager()
 
@@ -582,16 +602,13 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             msg = json.loads(data)
             
-            # Handle different message types
             msg_type = msg.get("type")
             
             if msg_type == "subscribe":
-                # Subscribe to agent updates
                 agent_id = msg.get("agent_id")
                 await ws_manager.send(client_id, {"type": "subscribed", "agent_id": agent_id})
             
             elif msg_type == "task_result":
-                # Broadcast task result
                 await ws_manager.broadcast({
                     "type": "task_result",
                     "task_id": msg.get("task_id"),
@@ -602,9 +619,38 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         ws_manager.disconnect(client_id)
 
+@app.websocket("/ws/task/{task_id}")
+async def websocket_task_stream(websocket: WebSocket, task_id: str):
+    """Subscribe to a specific task's streaming output"""
+    await websocket.accept()
+    ws_manager.subscribe_task(websocket, task_id)
+    try:
+        # Send initial status
+        await websocket.send_json({"type": "subscribed", "task_id": task_id})
+        
+        # Keep connection alive, wait for task updates
+        while True:
+            # Just keep the connection open
+            data = await websocket.receive_text()
+            # Could handle heartbeat, etc.
+    except WebSocketDisconnect:
+        ws_manager.unsubscribe_task(websocket, task_id)
+
 @app.get("/ws/health")
 async def ws_health():
     return {"status": "ws_healthy", "connections": len(ws_manager.active_connections)}
+
+# Feature 3: Task streaming endpoint for workers
+@app.post("/tasks/{task_id}/stream")
+async def task_stream_push(task_id: str, data: dict = None):
+    """Workers push streaming output here"""
+    await ws_manager.stream_to_task(task_id, {"type": "stream", "data": data})
+    return {"streamed": True}
+
+# Feature 3: Get list of active task streams
+@app.get("/ws/streams")
+def list_active_streams():
+    return {"streams": list(ws_manager.task_connections.keys())}
 
 # ============= Database-Backed Endpoints (Optional) =============
 

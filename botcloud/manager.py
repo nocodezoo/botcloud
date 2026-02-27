@@ -34,6 +34,82 @@ class BotCloudWorker:
     status: str = "stopped"
 
 
+class Chain:
+    """
+    Task chaining - pipeline output from one task to another.
+    
+    Usage:
+        chain = Chain(manager)
+        chain.add("worker-0", "fetch data.json")
+        chain.add("worker-1", "process {{result}}")  
+        chain.add("worker-2", "save {{result}}")
+        results = chain.run()
+    """
+    
+    def __init__(self, manager: 'BotCloudManager' = None):
+        self.manager = manager
+        self.steps = []
+        self.error_policy = "stop"  # stop|retry|continue
+    
+    def add(self, worker_name: str, task: str):
+        """Add a sequential step"""
+        self.steps.append({"worker": worker_name, "task": task, "parallel": False})
+        return self
+    
+    def add_parallel(self, worker_names: List[str], task: str):
+        """Add a parallel step - same task to multiple workers"""
+        self.steps.append({"workers": worker_names, "task": task, "parallel": True})
+        return self
+    
+    def on_error(self, policy: str):
+        """Set error policy: stop|retry|continue"""
+        self.error_policy = policy
+        return self
+    
+    def run(self) -> List[Dict]:
+        """Execute the chain"""
+        if not self.manager:
+            raise ValueError("Chain requires a BotCloudManager instance")
+        
+        results = []
+        previous_output = None
+        
+        for i, step in enumerate(self.steps):
+            # Replace {{result}} with previous output
+            task = step["task"]
+            if previous_output and "{{result}}" in task:
+                task = task.replace("{{result}}", str(previous_output))
+            
+            try:
+                if step.get("parallel"):
+                    # Parallel execution
+                    workers = step.get("workers", [])
+                    task_results = []
+                    for w in workers:
+                        r = self.manager.submit_task(w, task, wait_for_result=True)
+                        task_results.append(r)
+                    results.append({"step": i, "type": "parallel", "results": task_results})
+                    # Use last result as output
+                    previous_output = task_results[-1].get("output")
+                else:
+                    # Sequential execution
+                    worker = step.get("worker")
+                    r = self.manager.submit_task(worker, task, wait_for_result=True)
+                    results.append({"step": i, "type": "sequential", "result": r})
+                    previous_output = r.get("output")
+                    
+            except Exception as e:
+                if self.error_policy == "stop":
+                    results.append({"step": i, "error": str(e), "stopped": True})
+                    break
+                elif self.error_policy == "continue":
+                    results.append({"step": i, "error": str(e), "continued": True})
+                    previous_output = None
+                # retry would re-try the task
+        
+        return results
+
+
 class BotCloudManager:
     """
     Manages BotCloud API and worker processes for OpenClaw.
