@@ -110,6 +110,99 @@ def make_directory(dirpath: str) -> str:
         return f"Error: {str(e)}"
 
 
+def web_search(query: str) -> str:
+    """Search the web - delegates to OpenClaw for best results"""
+    if not query:
+        return "Usage: search <query>"
+    
+    # Try DuckDuckGo instant
+    try:
+        import requests
+        resp = requests.get(
+            "https://duckduckgo.com/",
+            params={"q": query, "ia": "answer"},
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
+        if resp.status_code == 200:
+            # Check for instant answer
+            import re
+            # Look for related searches or quick answer
+            results = re.findall(r'"query":"[^"]*","label":"([^"]+)"', resp.text)
+            if results:
+                return "Suggestions: " + ", ".join(results[:5])
+    except:
+        pass
+    
+    # Fallback: delegate to OpenClaw which has better search
+    return delegate_to_openclaw(f"search: {query}")
+
+
+def fetch_url(url: str) -> str:
+    """Fetch a web page"""
+    if not url:
+        return "Usage: fetch <url>"
+    
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    
+    try:
+        import requests
+        resp = requests.get(url, timeout=15)
+        if resp.status_code == 200:
+            return f"=== {url} ===\n\n{resp.text[:2000]}"
+        return f"Fetch failed: HTTP {resp.status_code}"
+    except Exception as e:
+        return f"Fetch error: {str(e)}"
+
+
+def calculate(expr: str) -> str:
+    """Evaluate a math expression"""
+    if not expr:
+        return "Usage: math <expression>"
+    
+    allowed = set("0123456789+-*/.() ")
+    if not all(c in allowed for c in expr):
+        return "Error: Only basic math allowed (+ - * /)"
+    
+    try:
+        result = eval(expr, {"__builtins__": {}}, {})
+        return f"{expr} = {result}"
+    except Exception as e:
+        return f"Math error: {str(e)}"
+
+
+def make_http_request(request_def: str) -> str:
+    """Make an HTTP request"""
+    parts = request_def.split(None, 2)
+    if len(parts) < 2:
+        return "Usage: http <METHOD> <URL>"
+    
+    method = parts[0].upper()
+    url = parts[1]
+    body = parts[2] if len(parts) > 2 else None
+    
+    try:
+        import requests
+        kwargs = {"url": url, "timeout": 15}
+        
+        if method == "GET":
+            pass
+        elif method == "POST":
+            kwargs["json"] = {"body": body} if body else {}
+        elif method == "PUT":
+            kwargs["json"] = {"body": body} if body else {}
+        elif method == "DELETE":
+            pass
+        else:
+            return f"Unsupported: {method}"
+        
+        resp = requests.request(method, **kwargs)
+        return f"HTTP {resp.status_code}\n\n{resp.text[:1000]}"
+    except Exception as e:
+        return f"HTTP error: {str(e)}"
+
+
 def delegate_to_openclaw(task: str) -> str:
     """Delegate a task to OpenClaw for processing"""
     # Import the connector
@@ -181,6 +274,22 @@ def process_task(task_input: str) -> str:
     elif cmd == "exec" or cmd == "run":
         return execute_command(arg)
     
+    # Web search
+    elif cmd == "search":
+        return web_search(arg)
+    
+    # Fetch web page
+    elif cmd == "fetch" or cmd == "curl":
+        return fetch_url(arg)
+    
+    # Math calculation
+    elif cmd == "math" or cmd == "calc":
+        return calculate(arg)
+    
+    # Make HTTP request
+    elif cmd == "http" or cmd == "request":
+        return make_http_request(arg)
+    
     # Delegate to OpenClaw (call back to OpenClaw API)
     elif cmd == "delegate":
         return delegate_to_openclaw(arg)
@@ -192,12 +301,23 @@ def process_task(task_input: str) -> str:
     # Help
     elif cmd == "help":
         return """BotCloud Worker Commands:
+FILE OPS:
 - read <filename> - Read file
 - write <filename> <content> - Write file
 - ls [dir] - List files
 - mkdir <dir> - Create directory
 - rm <file> - Delete file
+
+NETWORK:
+- search <query> - Web search
+- fetch <url> - Fetch web page
+- http <METHOD> <URL> - Make HTTP request
+
+COMPUTE:
+- math <expression> - Calculate math
 - exec <command> - Run shell command
+
+AI:
 - delegate <task> - Delegate to OpenClaw
 - info - Worker info"""
     
