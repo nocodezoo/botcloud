@@ -20,98 +20,56 @@ BotCloud is a distributed task execution network that lets OpenClaw spawn multip
 - Batch operations
 - Scaling agent capacity beyond single-threaded limits
 
-## Commands
+## CLI Commands
 
-### Check Status
-```
-botcloud status
-```
-Returns: Number of workers, API health, worker details.
+```bash
+# Check status
+python3 botcloud/cli.py status
 
-### Start Workers
-```
-botcloud start <count>
-botcloud workers <count>
-```
-Example: `botcloud start 5` - Spawns 5 workers.
+# Start workers
+python3 botcloud/cli.py start 5
 
-### Stop All
-```
-botcloud stop
-```
-Stops all workers and the API server.
+# Submit task to specific worker
+python3 botcloud/cli.py task "exec echo hi" --worker worker-0
 
-### Submit Task to Specific Worker
+# Submit to any worker (parallel)
+python3 botcloud/cli.py any "exec echo hi"
+
+# Stop all
+python3 botcloud/cli.py stop
+
+# Detailed stats
+python3 botcloud/cli.py stats
 ```
-botcloud task <worker> <task>
-botcloud worker-0 "read file.txt"
-```
-Example: `botcloud task worker-0 "do something"`
 
-### Submit Task to Any Worker (Parallel)
-```
-botcloud any "<task>"
-```
-Distributes task to next available worker (round-robin).
-
-### Get Stats
-```
-botcloud stats
-```
-Returns detailed BotCloud network statistics.
-
-## Worker Commands
-
-Workers understand these commands:
-
-- `read <filename>` - Read file from workspace
-- `write <filename> <content>` - Write file to workspace
-- `ls [dir]` - List files in workspace
-- `mkdir <dir>` - Create directory
-- `rm <file>` - Delete file
-- `exec <command>` - Run shell command
-- `info` - Worker info
-
-## Implementation
-
-The BotCloud manager is at: `botcloud/manager.py`
+## Python API
 
 ```python
-import sys
-sys.path.insert(0, '/home/openryanclaw/.openclaw/workspace')
-from botcloud.manager import BotCloudManager, get_manager
+from botcloud.manager import BotCloudManager
 
-# Get or create manager (singleton)
-manager = get_manager()
-
-# Start API (if not running)
+manager = BotCloudManager()
 manager.start_api()
-
-# Spawn workers
 workers = manager.spawn_workers(5)
 
-# Submit to specific worker
-result = manager.submit_task("worker-0", "read myfile.txt")
+# Specific worker
+result = manager.submit_task("worker-0", "read file.txt")
 
-# Submit to any available worker (parallel)
-result = manager.submit_task_any("echo hello")
+# Any worker (parallel)
+result = manager.submit_task_any("exec echo hi")
 
-# Batch submit
-for i in range(10):
-    manager.submit_task_any(f"process item {i}")
+# With OpenClaw delegation
+workers = manager.spawn_workers(5, openclaw_url="http://localhost:8080")
 
-# Get status
-stats = manager.get_stats()
-print(f"Running: {stats['running_workers']}/{stats['total_workers']}")
-
-# Cleanup
 manager.stop_all()
 ```
 
-## Notes
+## Worker Commands
 
-- Workers have real capabilities (file ops, shell exec)
-- Round-robin distribution for `submit_task_any()`
-- Each worker gets unique ID: "worker-0", "worker-1", etc.
-- Workspace: `/home/openryanclaw/botcloud/workspace`
-- Default port: 8000
+- `read <filename>` - Read file
+- `write <filename> <content>` - Write file
+- `ls [dir]` - List files
+- `mkdir <dir>` - Create directory
+- `rm <file>` - Delete file
+- `exec <command>` - Run shell command
+- `delegate <task>` - Delegate to OpenClaw
+- `info` - Worker info
