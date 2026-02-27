@@ -110,6 +110,28 @@ def make_directory(dirpath: str) -> str:
         return f"Error: {str(e)}"
 
 
+def delegate_to_openclaw(task: str) -> str:
+    """Delegate a task to OpenClaw for processing"""
+    openclaw_url = os.environ.get("OPENCLAW_URL", "http://localhost:8080")
+    
+    try:
+        import requests
+        # Send task to OpenClaw's task endpoint
+        # This assumes OpenClaw exposes a /delegate or /task endpoint
+        # For now, we'll try to send to a configured endpoint
+        response = requests.post(
+            f"{openclaw_url}/delegate",
+            json={"task": task, "worker": AGENT_ID},
+            timeout=30
+        )
+        if response.status_code == 200:
+            return f"Delegated to OpenClaw: {response.json()}"
+        else:
+            return f"OpenClaw delegation failed: {response.status_code}"
+    except Exception as e:
+        return f"Delegate error: {str(e)}"
+
+
 def process_task(task_input: str) -> str:
     """Process a task with actual capabilities"""
     task = task_input.strip()
@@ -143,6 +165,10 @@ def process_task(task_input: str) -> str:
     elif cmd == "exec" or cmd == "run":
         return execute_command(arg)
     
+    # Delegate to OpenClaw (call back to OpenClaw API)
+    elif cmd == "delegate":
+        return delegate_to_openclaw(arg)
+    
     # Get info
     elif cmd == "info":
         return f"Worker: {AGENT_ID}\nWorkspace: {WORKSPACE}\nAPI: {API_URL}"
@@ -156,6 +182,7 @@ def process_task(task_input: str) -> str:
 - mkdir <dir> - Create directory
 - rm <file> - Delete file
 - exec <command> - Run shell command
+- delegate <task> - Delegate to OpenClaw
 - info - Worker info"""
     
     # Default: try as shell command

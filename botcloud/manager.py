@@ -143,7 +143,7 @@ class BotCloudManager:
         print(f"✓ Registered worker: {name} ({worker.agent_id})")
         return worker
     
-    def start_worker(self, worker: BotCloudWorker) -> bool:
+    def start_worker(self, worker: BotCloudWorker, openclaw_url: str = None) -> bool:
         """Start a worker process"""
         if worker.process:
             return True
@@ -155,6 +155,8 @@ class BotCloudManager:
         worker_env["BOTCLOUD_API_KEY"] = worker.api_key
         worker_env["BOTCLOUD_POLL_INTERVAL"] = str(DEFAULT_POLL_INTERVAL)
         worker_env["BOTCLOUD_WORKSPACE"] = self.workspace
+        if openclaw_url:
+            worker_env["OPENCLAW_URL"] = openclaw_url
         
         worker.process = subprocess.Popen(
             [sys.executable, self.worker_py_path()],
@@ -175,7 +177,8 @@ class BotCloudManager:
         self,
         count: int,
         worker_type: str = "worker",
-        capabilities: List[str] = None
+        capabilities: List[str] = None,
+        openclaw_url: str = None
     ) -> List[BotCloudWorker]:
         """Spawn multiple workers"""
         workers = []
@@ -183,7 +186,7 @@ class BotCloudManager:
         for i in range(count):
             name = f"worker-{i}"
             worker = self.register_worker(name, capabilities, worker_type)
-            self.start_worker(worker)
+            self.start_worker(worker, openclaw_url)
             workers.append(worker)
         
         print(f"✓ Spawned {count} workers")
