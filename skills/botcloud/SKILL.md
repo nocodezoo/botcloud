@@ -8,6 +8,7 @@ Use this skill when the user wants to manage BotCloud workers or distribute task
 - "start workers" / "spawn workers"
 - "worker pool"
 - "distributed agents"
+- "parallel tasks"
 
 ## What BotCloud Does
 
@@ -40,17 +41,36 @@ botcloud stop
 ```
 Stops all workers and the API server.
 
-### Submit Task
+### Submit Task to Specific Worker
 ```
 botcloud task <worker> <task>
+botcloud worker-0 "read file.txt"
 ```
 Example: `botcloud task worker-0 "do something"`
+
+### Submit Task to Any Worker (Parallel)
+```
+botcloud any "<task>"
+```
+Distributes task to next available worker (round-robin).
 
 ### Get Stats
 ```
 botcloud stats
 ```
 Returns detailed BotCloud network statistics.
+
+## Worker Commands
+
+Workers understand these commands:
+
+- `read <filename>` - Read file from workspace
+- `write <filename> <content>` - Write file to workspace
+- `ls [dir]` - List files in workspace
+- `mkdir <dir>` - Create directory
+- `rm <file>` - Delete file
+- `exec <command>` - Run shell command
+- `info` - Worker info
 
 ## Implementation
 
@@ -59,22 +79,30 @@ The BotCloud manager is at: `botcloud/manager.py`
 ```python
 import sys
 sys.path.insert(0, '/home/openryanclaw/.openclaw/workspace')
-from botcloud.manager import BotCloudManager
+from botcloud.manager import BotCloudManager, get_manager
 
-# Initialize
-manager = BotCloudManager()
+# Get or create manager (singleton)
+manager = get_manager()
 
-# Start API
+# Start API (if not running)
 manager.start_api()
 
 # Spawn workers
 workers = manager.spawn_workers(5)
 
-# Submit task
-result = manager.submit_task("worker-0", "your task here")
+# Submit to specific worker
+result = manager.submit_task("worker-0", "read myfile.txt")
+
+# Submit to any available worker (parallel)
+result = manager.submit_task_any("echo hello")
+
+# Batch submit
+for i in range(10):
+    manager.submit_task_any(f"process item {i}")
 
 # Get status
 stats = manager.get_stats()
+print(f"Running: {stats['running_workers']}/{stats['total_workers']}")
 
 # Cleanup
 manager.stop_all()
@@ -82,7 +110,8 @@ manager.stop_all()
 
 ## Notes
 
-- Workers auto-complete tasks immediately (the API simulates this)
-- For real async work, workers need to actually process tasks
-- The manager defaults to port 8000
-- Each worker gets a unique ID like "worker-0", "worker-1", etc.
+- Workers have real capabilities (file ops, shell exec)
+- Round-robin distribution for `submit_task_any()`
+- Each worker gets unique ID: "worker-0", "worker-1", etc.
+- Workspace: `/home/openryanclaw/botcloud/workspace`
+- Default port: 8000
