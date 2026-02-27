@@ -112,22 +112,38 @@ def make_directory(dirpath: str) -> str:
 
 def delegate_to_openclaw(task: str) -> str:
     """Delegate a task to OpenClaw for processing"""
-    openclaw_url = os.environ.get("OPENCLAW_URL", "http://localhost:8080")
+    # Import the connector
+    import sys
+    import os
+    
+    # Add workspace to path to import connector
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     
     try:
-        import requests
-        # Send task to OpenClaw's task endpoint
-        # This assumes OpenClaw exposes a /delegate or /task endpoint
-        # For now, we'll try to send to a configured endpoint
-        response = requests.post(
-            f"{openclaw_url}/delegate",
-            json={"task": task, "worker": AGENT_ID},
-            timeout=30
-        )
-        if response.status_code == 200:
-            return f"Delegated to OpenClaw: {response.json()}"
+        from botcloud.openclaw_connector import OpenClawConnector
+        
+        openclaw_url = os.environ.get("OPENCLAW_URL", "http://localhost:8080")
+        connector = OpenClawConnector(openclaw_url=openclaw_url)
+        
+        # Check if OpenClaw is reachable
+        health = connector.health_check()
+        if health["status"] != "healthy":
+            return f"OpenClaw unreachable: {health.get('error', 'unknown')}"
+        
+        # Delegate the task
+        result = connector.delegate_task(task, timeout=120)
+        
+        if result["status"] == "completed":
+            # Extract result
+            res = result.get("result", {})
+            if isinstance(res, dict):
+                return f"OpenClaw result: {res.get('content', res)}"
+            return f"OpenClaw result: {res}"
         else:
-            return f"OpenClaw delegation failed: {response.status_code}"
+            return f"OpenClaw error: {result.get('error', result.get('status'))}"
+            
+    except ImportError:
+        return "OpenClaw connector not available"
     except Exception as e:
         return f"Delegate error: {str(e)}"
 
