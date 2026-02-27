@@ -59,6 +59,31 @@ class Database(ABC):
     def search_memories(self, agent_id: str, query: str) -> List[Dict]:
         """Hybrid search - keyword + semantic"""
         pass
+    
+    @abstractmethod
+    def shared_set(self, key: str, value: str) -> Dict:
+        """Set a shared value (global, not per-agent)"""
+        pass
+    
+    @abstractmethod
+    def shared_get(self, key: str) -> Optional[Dict]:
+        """Get a shared value"""
+        pass
+    
+    @abstractmethod
+    def shared_incr(self, key: str, delta: int = 1) -> int:
+        """Atomically increment a counter"""
+        pass
+    
+    @abstractmethod
+    def shared_delete(self, key: str) -> bool:
+        """Delete a shared key"""
+        pass
+    
+    @abstractmethod
+    def shared_list(self) -> List[Dict]:
+        """List all shared keys"""
+        pass
 
 
 class SQLiteDB(Database):
@@ -106,6 +131,13 @@ class SQLiteDB(Database):
                 value TEXT,
                 created_at TEXT,
                 FOREIGN KEY (agent_id) REFERENCES agents(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS shared_memory (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TEXT,
+                counter INTEGER DEFAULT 0
             );
             
             CREATE TABLE IF NOT EXISTS messages (
@@ -259,6 +291,55 @@ class SQLiteDB(Database):
         
         return [dict(r) for r in rows]
     
+    # ============ Shared Memory (Global) ============
+    
+    def shared_set(self, key: str, value: str) -> Dict:
+        """Set a shared value (global, not per-agent)"""
+        now = datetime.utcnow().isoformat()
+        self.conn.execute("""
+            INSERT OR REPLACE INTO shared_memory (key, value, updated_at)
+            VALUES (?, ?, ?)
+        """, (key, value, now))
+        self.conn.commit()
+        return {"key": key, "value": value, "updated_at": now}
+    
+    def shared_get(self, key: str) -> Optional[Dict]:
+        """Get a shared value"""
+        row = self.conn.execute(
+            "SELECT * FROM shared_memory WHERE key = ?", (key,)
+        ).fetchone()
+        return dict(row) if row else None
+    
+    def shared_incr(self, key: str, delta: int = 1) -> int:
+        """Atomically increment a counter"""
+        # First ensure the key exists
+        self.conn.execute("""
+            INSERT OR IGNORE INTO shared_memory (key, counter, updated_at)
+            VALUES (?, 0, ?)
+        """, (key, datetime.utcnow().isoformat()))
+        
+        # Now increment
+        self.conn.execute("""
+            UPDATE shared_memory SET counter = counter + ?, updated_at = ?
+            WHERE key = ?
+        """, (delta, datetime.utcnow().isoformat(), key))
+        self.conn.commit()
+        
+        # Get new value
+        row = self.conn.execute("SELECT counter FROM shared_memory WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else 0
+    
+    def shared_delete(self, key: str) -> bool:
+        """Delete a shared key"""
+        self.conn.execute("DELETE FROM shared_memory WHERE key = ?", (key,))
+        self.conn.commit()
+        return True
+    
+    def shared_list(self) -> List[Dict]:
+        """List all shared keys"""
+        rows = self.conn.execute("SELECT * FROM shared_memory ORDER BY updated_at DESC").fetchall()
+        return [dict(r) for r in rows]
+    
     def close(self):
         self.conn.close()
 
@@ -319,6 +400,16 @@ class PostgresDB(Database):
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_memories_fts 
                 ON memories USING GIN(to_tsvector('english', key || ' ' || value))
+            """)
+            
+            # Shared memory table (global, not per-agent)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS shared_memory (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    counter INTEGER DEFAULT 0
+                )
             """)
     
     def create_agent(self, name: str, capabilities: List[str], api_key: str) -> Dict:
@@ -422,6 +513,58 @@ class PostgresDB(Database):
             """, (agent_id, query))
             
             return [{"id": r[0], "key": r[2], "value": r[3]} for r in cur.fetchall()]
+    
+    # ============ Shared Memory (Global) ============
+    
+    def shared_set(self, key: str, value: str) -> Dict:
+        """Set a shared value (global, not per-agent)"""
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO shared_memory (key, value, updated_at)
+                VALUES (%s, %s, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = %s, updated_at = NOW()
+            """, (key, value, value))
+            return {"key": key, "value": value}
+    
+    def shared_get(self, key: str) -> Optional[Dict]:
+        """Get a shared value"""
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT * FROM shared_memory WHERE key = %s", (key,))
+            row = cur.fetchone()
+            if row:
+                return {"key": row[0], "value": row[1], "counter": row[3]}
+            return None
+    
+    def shared_incr(self, key: str, delta: int = 1) -> int:
+        """Atomically increment a counter"""
+        with self.conn.cursor() as cur:
+            # Ensure key exists
+            cur.execute("""
+                INSERT INTO shared_memory (key, counter, updated_at)
+                VALUES (%s, 0, NOW())
+                ON CONFLICT (key) DO NOTHING
+            """, (key,))
+            # Increment
+            cur.execute("""
+                UPDATE shared_memory SET counter = counter + %s, updated_at = NOW()
+                WHERE key = %s
+            """, (delta, key))
+            # Get new value
+            cur.execute("SELECT counter FROM shared_memory WHERE key = %s", (key,))
+            row = cur.fetchone()
+            return row[0] if row else 0
+    
+    def shared_delete(self, key: str) -> bool:
+        """Delete a shared key"""
+        with self.conn.cursor() as cur:
+            cur.execute("DELETE FROM shared_memory WHERE key = %s", (key,))
+        return True
+    
+    def shared_list(self) -> List[Dict]:
+        """List all shared keys"""
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT * FROM shared_memory ORDER BY updated_at DESC")
+            return [{"key": r[0], "value": r[1], "counter": r[3]} for r in cur.fetchall()]
     
     def close(self):
         self.conn.close()

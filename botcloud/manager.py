@@ -307,6 +307,39 @@ class BotCloudManager:
             "running_workers": sum(1 for w in self.workers.values() if w.status == "running"),
             "workers": self.get_worker_status()
         }
+    
+    # ============ Shared Memory ============
+    
+    def shared_set(self, key: str, value: str) -> Dict:
+        """Set a shared value across all workers"""
+        resp = requests.put(f"{self.api_url}/shared/{key}", json={"value": value})
+        resp.raise_for_status()
+        return resp.json()
+    
+    def shared_get(self, key: str) -> Optional[Dict]:
+        """Get a shared value"""
+        resp = requests.get(f"{self.api_url}/shared/{key}")
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+    
+    def shared_incr(self, key: str, delta: int = 1) -> int:
+        """Increment a shared counter"""
+        resp = requests.post(f"{self.api_url}/shared/{key}/incr", json={"delta": delta})
+        resp.raise_for_status()
+        return resp.json().get("counter", 0)
+    
+    def shared_delete(self, key: str):
+        """Delete a shared key"""
+        resp = requests.delete(f"{self.api_url}/shared/{key}")
+        resp.raise_for_status()
+    
+    def shared_list(self) -> List[Dict]:
+        """List all shared keys"""
+        resp = requests.get(f"{self.api_url}/shared")
+        resp.raise_for_status()
+        return resp.json().get("shared", [])
 
 
 # Convenience function for quick testing

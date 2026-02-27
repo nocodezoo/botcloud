@@ -208,6 +208,15 @@ store.agents[demo_agent.id] = demo_agent
 
 app = FastAPI(title="BotCloud API", version="1.0.0")
 
+# Enable CORS for dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 def verify_api_key(x_api_key: str = Header(None, alias="X-API-Key")) -> str:
     if not x_api_key:
         raise HTTPException(status_code=401, detail="API key required")
@@ -681,6 +690,61 @@ def db_search_memories(agent_id: str, q: str = None):
     """Search memories in database"""
     db = get_db()
     return {"memories": db.search_memories(agent_id, q or "")}
+
+# ============= Shared Memory (Global) =============
+
+@app.get("/shared")
+def shared_list():
+    """List all shared memory keys"""
+    db = get_db()
+    return {"shared": db.shared_list()}
+
+@app.get("/shared/{key}")
+def shared_get(key: str):
+    """Get a shared value"""
+    db = get_db()
+    result = db.shared_get(key)
+    if not result:
+        raise HTTPException(status_code=404, detail="Key not found")
+    return result
+
+@app.put("/shared/{key}")
+def shared_set(key: str, value: str = Body(..., embed=True)):
+    """Set a shared value"""
+    db = get_db()
+    return db.shared_set(key, value)
+
+@app.post("/shared/{key}/incr")
+def shared_incr(key: str, delta: int = Body(default=1, embed=True)):
+    """Increment a shared counter"""
+    db = get_db()
+    new_value = db.shared_incr(key, delta)
+    return {"key": key, "counter": new_value}
+
+@app.delete("/shared/{key}")
+def shared_delete(key: str):
+    """Delete a shared key"""
+    db = get_db()
+    db.shared_delete(key)
+    return {"deleted": key}
+
+# ============= Global Tasks (for dashboard) =============
+
+@app.get("/tasks")
+def list_all_tasks():
+    """List all tasks across all agents"""
+    all_tasks = []
+    for task in store.tasks.values():
+        all_tasks.append({
+            "id": task.id,
+            "agent_id": task.agent_id,
+            "input": task.input,
+            "output": task.output,
+            "status": task.status,
+            "created_at": task.created_at.isoformat() if task.created_at else None,
+            "completed_at": task.completed_at.isoformat() if task.completed_at else None
+        })
+    return {"tasks": all_tasks}
 
 # ============= Run =============
 

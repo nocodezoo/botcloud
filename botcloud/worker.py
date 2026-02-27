@@ -150,6 +150,63 @@ def memory_delete(key: str) -> str:
     return f"Not found: {key}"
 
 
+# ============ SHARED MEMORY (Global) ============
+
+def shared_set(key: str, value: str) -> str:
+    """Set a shared value (accessible by all workers)"""
+    try:
+        import requests
+        resp = requests.put(f"{API_URL}/shared/{key}", json=value, timeout=5)
+        if resp.status_code == 200:
+            return f"Shared set: {key} = {value}"
+        return f"Error: {resp.status_code}"
+    except Exception as e:
+        return f"Shared memory error: {str(e)}"
+
+
+def shared_get(key: str) -> str:
+    """Get a shared value"""
+    try:
+        import requests
+        resp = requests.get(f"{API_URL}/shared/{key}", timeout=5)
+        if resp.status_code == 404:
+            return f"Not found: {key}"
+        if resp.status_code == 200:
+            data = resp.json()
+            return f"{key} = {data.get('value', data.get('counter', 'N/A'))}"
+        return f"Error: {resp.status_code}"
+    except Exception as e:
+        return f"Shared memory error: {str(e)}"
+
+
+def shared_incr(key: str, delta: int = 1) -> str:
+    """Atomically increment a shared counter"""
+    try:
+        import requests
+        resp = requests.post(f"{API_URL}/shared/{key}/incr", json=delta, timeout=5)
+        if resp.status_code == 200:
+            new_val = resp.json().get("counter", 0)
+            return f"{key} incremented: {new_val}"
+        return f"Error: {resp.status_code}"
+    except Exception as e:
+        return f"Shared memory error: {str(e)}"
+
+
+def shared_list() -> str:
+    """List all shared keys"""
+    try:
+        import requests
+        resp = requests.get(f"{API_URL}/shared", timeout=5)
+        if resp.status_code == 200:
+            data = resp.json().get("shared", [])
+            if not data:
+                return "No shared keys"
+            return "\n".join(f"- {k['key']}: {k.get('value', k.get('counter', ''))}" for k in data)
+        return f"Error: {resp.status_code}"
+    except Exception as e:
+        return f"Shared memory error: {str(e)}"
+
+
 # ============ CRON/SCHEDULE ============
 
 _scheduled_tasks = {}
@@ -533,6 +590,24 @@ def process_single_task(task_input: str) -> str:
         if sub[0] == "del":
             return memory_delete(sub[1] if len(sub) > 1 else "")
         return "Usage: memory [set <key> <val>|get <key>|del <key>|list]"
+    
+    # Shared memory (global across workers)
+    if cmd == "shared":
+        sub = arg.split(None, 1)
+        if not sub:
+            return shared_list()
+        if sub[0] == "set" and len(sub) > 1:
+            parts2 = sub[1].split(None, 1)
+            if len(parts2) == 2:
+                return shared_set(parts2[0], parts2[1])
+        if sub[0] == "get":
+            return shared_get(sub[1] if len(sub) > 1 else "")
+        if sub[0] == "incr":
+            parts2 = sub[1].split()
+            key = parts2[0] if parts2 else ""
+            delta = int(parts2[1]) if len(parts2) > 1 else 1
+            return shared_incr(key, delta)
+        return "Usage: shared [set <key> <val>|get <key>|incr <key> [delta]|list]"
     
     # Cron
     if cmd == "cron" or cmd == "schedule":
