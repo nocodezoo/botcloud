@@ -148,9 +148,17 @@ class BotCloudManager:
         if worker.process:
             return True
         
-        # Start the worker - it will poll for tasks automatically
+        # Use the external worker.py with real capabilities
+        worker_env = os.environ.copy()
+        worker_env["BOTCLOUD_API"] = self.api_url
+        worker_env["BOTCLOUD_AGENT_ID"] = worker.agent_id
+        worker_env["BOTCLOUD_API_KEY"] = worker.api_key
+        worker_env["BOTCLOUD_POLL_INTERVAL"] = str(DEFAULT_POLL_INTERVAL)
+        worker_env["BOTCLOUD_WORKSPACE"] = self.workspace
+        
         worker.process = subprocess.Popen(
-            [sys.executable, "-c", self._worker_script(worker)],
+            [sys.executable, self.worker_py_path()],
+            env=worker_env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             preexec_fn=os.setsid if sys.platform != 'win32' else None
@@ -159,48 +167,9 @@ class BotCloudManager:
         print(f"✓ Started worker process: {worker.name}")
         return True
     
-    def _worker_script(self, worker: BotCloudWorker) -> str:
-        """Generate inline worker script"""
-        return f'''
-import sys
-import os
-import time
-import requests
-
-API_URL = "{self.api_url}"
-AGENT_ID = "{worker.agent_id}"
-API_KEY = "{worker.api_key}"
-POLL_INTERVAL = {DEFAULT_POLL_INTERVAL}
-
-print(f"Worker {{AGENT_ID}} starting...")
-
-while True:
-    try:
-        # Poll for tasks
-        resp = requests.get(f"{{API_URL}}/agents/{{AGENT_ID}}/tasks", timeout=5)
-        if resp.status_code == 200:
-            tasks = resp.json().get("tasks", [])
-            for task in tasks:
-                if task.get("status") == "pending":
-                    task_id = task["id"]
-                    task_input = task.get("input", "")
-                    print(f"→ Task {{task_id}}: {{task_input[:50]}}...")
-                    
-                    # Execute task (placeholder - can be extended)
-                    result = f"Processed by {{AGENT_ID}}: {{task_input}}"
-                    
-                    # Mark complete
-                    requests.post(
-                        f"{{API_URL}}/tasks/{{task_id}}/complete",
-                        headers={{"X-API-Key": API_KEY}},
-                        json={{"output": result}}
-                    )
-                    print(f"✓ Task {{task_id}} completed")
-    except Exception as e:
-        print(f"Error: {{e}}")
-    
-    time.sleep(POLL_INTERVAL)
-'''
+    def worker_py_path(self) -> str:
+        """Get path to worker.py"""
+        return os.path.join(BOTCLOUD_DIR, "worker.py")
     
     def spawn_workers(
         self,
