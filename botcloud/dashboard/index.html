@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotCloud Dashboard</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🤖 BotCloud <span id="api-status">Connecting...</span></h1>
+        <nav class="nav">
+            <a href="#overview" class="active" data-page="overview">Overview</a>
+            <a href="#workers" data-page="workers">Workers</a>
+            <a href="#tasks" data-page="tasks">Tasks</a>
+            <a href="#memory" data-page="memory">Memory</a>
+            <a href="#chains" data-page="chains">Chains</a>
+            <a href="#streams" data-page="streams">Streams</a>
+        </nav>
+    </div>
+    
+    <!-- Overview Page -->
+    <div id="page-overview" class="page container active">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-workers">0</div>
+                <div class="stat-label">Workers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-tasks">0</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-completed">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-memory">0</div>
+                <div class="stat-label">Memory Keys</div>
+            </div>
+        </div>
+        
+        <div id="overview-workers"></div>
+        <div id="overview-tasks"></div>
+    </div>
+    
+    <!-- Workers Page -->
+    <div id="page-workers" class="page container">
+        <div id="workers-container"></div>
+    </div>
+    
+    <!-- Tasks Page -->
+    <div id="page-tasks" class="page container">
+        <div id="tasks-container"></div>
+    </div>
+    
+    <!-- Memory Page -->
+    <div id="page-memory" class="page container">
+        <div id="memory-container"></div>
+    </div>
+    
+    <!-- Chains Page -->
+    <div id="page-chains" class="page container">
+        <div id="chains-container"></div>
+    </div>
+    
+    <!-- Streams Page -->
+    <div id="page-streams" class="page container">
+        <div id="streams-container"></div>
+    </div>
+    
+    <!-- Load components -->
+    <script src="components/api.js"></script>
+    <script src="components/workers.js"></script>
+    <script src="components/tasks.js"></script>
+    <script src="components/memory.js"></script>
+    <script src="components/chains.js"></script>
+    <script src="components/streams.js"></script>
+    
+    <script>
+        // Global panel instances
+        let workersPanel, tasksPanel, memoryPanel, chainsPanel, streamsPanel;
+        
+        // Check API health
+        async function checkHealth() {
+            try {
+                const health = await api.health();
+                document.getElementById('api-status').textContent = '● Connected';
+                document.getElementById('api-status').style.color = 'var(--accent-green)';
+                return true;
+            } catch (e) {
+                document.getElementById('api-status').textContent = '○ Disconnected';
+                document.getElementById('api-status').style.color = 'var(--accent-red)';
+                return false;
+            }
+        }
+        
+        // Update overview stats
+        async function updateOverview() {
+            try {
+                const [health, workers, tasks, memory] = await Promise.all([
+                    api.health(),
+                    api.listAgents(),
+                    api.listTasks(),
+                    api.sharedList()
+                ]);
+                
+                document.getElementById('stat-workers').textContent = (workers.agents || []).length;
+                document.getElementById('stat-tasks').textContent = (tasks.tasks || []).length;
+                document.getElementById('stat-completed').textContent = (tasks.tasks || []).filter(t => t.status === 'completed').length;
+                document.getElementById('stat-memory').textContent = (memory.shared || []).length;
+            } catch (e) {
+                console.error('Overview update failed:', e);
+            }
+        }
+        
+        // Initialize page navigation
+        function initNav() {
+            const links = document.querySelectorAll('.nav a');
+            links.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = link.dataset.page;
+                    
+                    // Update nav
+                    links.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Show page
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    document.getElementById('page-' + page).classList.add('active');
+                    
+                    // Lazy init panels
+                    initPage(page);
+                });
+            });
+        }
+        
+        // Lazy init pages
+        function initPage(page) {
+            switch(page) {
+                case 'overview':
+                    if (!workersPanel) {
+                        workersPanel = new WorkersPanel(document.getElementById('overview-workers'));
+                    }
+                    updateOverview();
+                    break;
+                case 'workers':
+                    if (!workersPanel) {
+                        workersPanel = new WorkersPanel(document.getElementById('workers-container'));
+                    }
+                    break;
+                case 'tasks':
+                    if (!tasksPanel) {
+                        tasksPanel = new TasksPanel(document.getElementById('tasks-container'));
+                    }
+                    break;
+                case 'memory':
+                    if (!memoryPanel) {
+                        memoryPanel = new MemoryPanel(document.getElementById('memory-container'));
+                    }
+                    break;
+                case 'chains':
+                    if (!chainsPanel) {
+                        chainsPanel = new ChainsPanel(document.getElementById('chains-container'));
+                    }
+                    break;
+                case 'streams':
+                    if (!streamsPanel) {
+                        streamsPanel = new StreamsPanel(document.getElementById('streams-container'));
+                    }
+                    break;
+            }
+        }
+        
+        // Initialize
+        async function init() {
+            initNav();
+            
+            // Check API
+            const healthy = await checkHealth();
+            if (!healthy) {
+                showToast('API not reachable - starting BotCloud?', 'error');
+            }
+            
+            // Init overview
+            initPage('overview');
+            
+            // Periodic health check
+            setInterval(checkHealth, 10000);
+        }
+        
+        // Start
+        init();
+    </script>
+</body>
+</html>
