@@ -46,6 +46,7 @@ class Task(BaseModel):
     status: str = "pending"
     created_at: datetime = None
     completed_at: Optional[datetime] = None
+    callback_url: Optional[str] = None  # Feature 4: callback on completion
 
 class Message(BaseModel):
     id: str
@@ -131,7 +132,7 @@ class BotStore:
         agent.status = AgentStatus.STOPPED
         return agent
     
-    def create_task(self, agent_id: str, input_data: str) -> Task:
+    def create_task(self, agent_id: str, input_data: str, callback_url: str = None) -> Task:
         # Verify agent exists
         self.get_agent(agent_id)
         
@@ -141,6 +142,7 @@ class BotStore:
             agent_id=agent_id,
             input=input_data,
             status="pending",
+            callback_url=callback_url,
             created_at=datetime.utcnow()
         )
         self.tasks[task_id] = task
@@ -334,13 +336,12 @@ def configure_agent(agent_id: str, config: Dict = Body(...), api_key: str = Head
 # ============= Tasks =============
 
 @app.post("/agents/{agent_id}/tasks")
-def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key: str = Header(None, alias="X-API-Key")):
+def create_task(agent_id: str, input_data: str = Body(..., embed=True), 
+                callback_url: str = Body(default=None, embed=True),
+                api_key: str = Header(None, alias="X-API-Key")):
     """Send a task to an agent"""
     verify_api_key(api_key)
-    task = store.create_task(agent_id, input_data)
-    
-    # Task stays pending - worker must poll and complete it
-    # task.status = "completed"  # Removed - workers handle this
+    task = store.create_task(agent_id, input_data, callback_url=callback_url)
     
     return {
         "id": task.id,
@@ -348,6 +349,7 @@ def create_task(agent_id: str, input_data: str = Body(..., embed=True), api_key:
         "input": task.input,
         "output": task.output,
         "status": task.status,
+        "callback_url": task.callback_url,
         "created_at": task.created_at.isoformat(),
         "completed_at": task.completed_at.isoformat() if task.completed_at else None
     }

@@ -197,17 +197,22 @@ class BotCloudManager:
         worker_name: str,
         task_input: str,
         wait_for_result: bool = True,
-        timeout: int = 60
+        timeout: int = 60,
+        callback_url: str = None
     ) -> Dict[str, Any]:
         """Submit a task to a worker"""
         worker = self.workers.get(worker_name)
         if not worker or not worker.agent_id:
             raise ValueError(f"Worker {worker_name} not found")
         
+        payload = {"input_data": task_input}
+        if callback_url:
+            payload["callback_url"] = callback_url
+        
         resp = requests.post(
             f"{self.api_url}/agents/{worker.agent_id}/tasks",
             headers={"X-API-Key": worker.api_key},
-            json={"input_data": task_input}
+            json=payload
         )
         resp.raise_for_status()
         task_data = resp.json()
@@ -224,7 +229,8 @@ class BotCloudManager:
         self,
         task_input: str,
         wait_for_result: bool = True,
-        timeout: int = 60
+        timeout: int = 60,
+        callback_url: str = None
     ) -> Dict[str, Any]:
         """Submit a task to any available worker (round-robin)"""
         if not self.workers:
@@ -241,7 +247,7 @@ class BotCloudManager:
             self.workers[worker_name].last_task_time = 0
         self.workers[worker_name].last_task_time = time.time()
         
-        return self.submit_task(worker_name, task_input, wait_for_result, timeout)
+        return self.submit_task(worker_name, task_input, wait_for_result, timeout, callback_url)
     
     def _wait_for_result(self, task_id: str, timeout: int) -> Dict[str, Any]:
         """Wait for task completion"""

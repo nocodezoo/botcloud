@@ -712,15 +712,30 @@ def main():
                     if task.get("status") == "pending":
                         task_id = task["id"]
                         task_input = task.get("input", "")
+                        callback_url = task.get("callback_url")  # Feature 4: callback
                         print(f"→ Task {task_id}: {task_input[:50]}...")
                         
                         result = process_single_task(task_input)
                         
+                        # Complete in API
                         requests.post(
                             f"{API_URL}/tasks/{task_id}/complete",
                             headers={"X-API-Key": API_KEY},
                             json={"output": result}
                         )
+                        
+                        # Feature 4: Callback URL
+                        if callback_url:
+                            try:
+                                requests.post(
+                                    callback_url,
+                                    json={"task_id": task_id, "output": result, "status": "completed"},
+                                    timeout=10
+                                )
+                                print(f"✓ Callback sent to {callback_url}")
+                            except Exception as cb_err:
+                                print(f"Callback error: {cb_err}")
+                        
                         print(f"✓ Task {task_id} completed")
         
         except Exception as e:
