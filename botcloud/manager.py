@@ -217,6 +217,29 @@ class BotCloudManager:
         
         return task_data
     
+    def submit_task_any(
+        self,
+        task_input: str,
+        wait_for_result: bool = True,
+        timeout: int = 60
+    ) -> Dict[str, Any]:
+        """Submit a task to any available worker (round-robin)"""
+        if not self.workers:
+            raise ValueError("No workers available")
+        
+        # Round-robin: pick worker with least recent task
+        worker_name = min(
+            self.workers.keys(),
+            key=lambda w: self.workers[w].last_task_time if hasattr(self.workers[w], 'last_task_time') else 0
+        )
+        
+        # Track last task time for round-robin
+        if not hasattr(self.workers[worker_name], 'last_task_time'):
+            self.workers[worker_name].last_task_time = 0
+        self.workers[worker_name].last_task_time = time.time()
+        
+        return self.submit_task(worker_name, task_input, wait_for_result, timeout)
+    
     def _wait_for_result(self, task_id: str, timeout: int) -> Dict[str, Any]:
         """Wait for task completion"""
         start = time.time()
